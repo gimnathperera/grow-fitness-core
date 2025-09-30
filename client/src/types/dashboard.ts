@@ -1,6 +1,7 @@
 export interface User {
   name: string;
   role: 'parent' | 'coach';
+ kids?: Student[]
 }
 
 export interface Student {

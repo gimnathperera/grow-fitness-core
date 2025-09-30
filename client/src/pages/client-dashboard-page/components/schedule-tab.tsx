@@ -107,7 +107,7 @@ export default function ScheduleTab() {
               onClick={() => setOpenBooking(true)}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Session
+              Add Extra Session
             </Button>
           </CardTitle>
         </CardHeader>
