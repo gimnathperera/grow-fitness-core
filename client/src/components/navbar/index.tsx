@@ -33,7 +33,7 @@ const Navbar: React.FC = () => {
 
   const destination = useMemo(
     () => getDefaultRouteForUser(auth.user),
-    [auth.user],
+    [auth.user]
   );
 
   const userInitial = useMemo(() => {
@@ -77,13 +77,13 @@ const Navbar: React.FC = () => {
         requestAnimationFrame(() => focusMenuItem(0));
       }
     },
-    [focusMenuItem, handleToggleMenu],
+    [focusMenuItem, handleToggleMenu]
   );
 
   const handleMenuItemKeyDown = useCallback(
     (
       event: React.KeyboardEvent<HTMLAnchorElement | HTMLButtonElement>,
-      index: number,
+      index: number
     ) => {
       const itemCount = menuItemsRefs.current.filter(Boolean).length;
       if (itemCount === 0) return;
@@ -112,7 +112,7 @@ const Navbar: React.FC = () => {
           break;
       }
     },
-    [closeMenu, focusMenuItem],
+    [closeMenu, focusMenuItem]
   );
 
   const handleProfileSelect = useCallback(() => {
@@ -134,7 +134,7 @@ const Navbar: React.FC = () => {
         onSelect: handleProfileSelect,
       },
     ],
-    [handleProfileSelect],
+    [handleProfileSelect]
   );
 
   const allMenuItems = useMemo(
@@ -142,7 +142,7 @@ const Navbar: React.FC = () => {
       ...primaryMenuItems,
       { key: 'logout', label: 'Log Out', onSelect: handleLogout },
     ],
-    [handleLogout, primaryMenuItems],
+    [handleLogout, primaryMenuItems]
   );
 
   useEffect(() => {
@@ -227,7 +227,7 @@ const Navbar: React.FC = () => {
                       onClick={handleToggleMenu}
                       onKeyDown={handleMenuKeyDown}
                       className={cn(
-                        'flex size-10 items-center justify-center rounded-full transition-colors',
+                        'flex size-10 items-center justify-center rounded-full transition-colors'
                       )}
                     >
                       <Avatar className="size-10">
@@ -282,7 +282,7 @@ const Navbar: React.FC = () => {
                   <NavigationMenuLink
                     className={cn(
                       'px-3 py-2 text-xs md:px-8 md:py-3 md:text-lg rounded-full font-[Insaniburger_with_Cheese] font-extrabold shadow-lg inline-flex items-center justify-center transition-transform duration-300 hover:scale-105 bg-white text-primary hover:bg-gray-100',
-                      isActive('/sign-in') && 'bg-gray-100',
+                      isActive('/sign-in') && 'bg-gray-100'
                     )}
                   >
                     <Link to="/sign-in">
@@ -296,10 +296,10 @@ const Navbar: React.FC = () => {
                   <NavigationMenuLink
                     className={cn(
                       'w-full md:w-auto px-3 py-2 text-xs md:px-8 md:py-3 md:text-lg rounded-full font-[Insaniburger_with_Cheese] font-extrabold shadow-lg inline-flex items-center justify-center transition-transform duration-300 hover:scale-105 bg-primary hover:bg-[#1e9c70] !text-white',
-                      isActive('/add-kids-details') && 'text-accent-foreground',
+                      isActive('/add-kids-details') && 'text-accent-foreground'
                     )}
                   >
-                    <Link to="/sign-up" className="!text-white">
+                    <Link to="/collect-info" className="!text-white">
                       <h6 className="leading-none whitespace-nowrap">
                         Book a free session
                       </h6>
@@ -322,7 +322,7 @@ const Navbar: React.FC = () => {
                     'block px-3 py-2 rounded-md text-base font-medium transition-colors',
                     isActive('/sign-in')
                       ? 'bg-accent text-accent-foreground'
-                      : 'text-foreground hover:bg-accent hover:text-accent-foreground',
+                      : 'text-foreground hover:bg-accent hover:text-accent-foreground'
                   )}
                 >
                   Sign In
@@ -336,7 +336,7 @@ const Navbar: React.FC = () => {
                     'block px-3 py-2 rounded-md text-base font-medium transition-colors',
                     isActive(destination)
                       ? 'bg-accent text-accent-foreground'
-                      : 'text-foreground hover:bg-accent hover:text-accent-foreground',
+                      : 'text-foreground hover:bg-accent hover:text-accent-foreground'
                   )}
                 >
                   {auth.user?.name ?? auth.user?.email ?? 'Dashboard'}
@@ -350,7 +350,7 @@ const Navbar: React.FC = () => {
                     'block px-3 py-2 rounded-md text-base font-medium transition-colors',
                     isActive('/add-kids-details')
                       ? 'bg-accent text-accent-foreground'
-                      : 'text-foreground hover:bg-accent hover:text-accent-foreground',
+                      : 'text-foreground hover:bg-accent hover:text-accent-foreground'
                   )}
                 >
                   Book a free session
