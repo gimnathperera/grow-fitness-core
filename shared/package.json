@@ -1,0 +1,12 @@
+{
+  "name": "@grow-fitness/shared",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./types": "./types/index.ts",
+    "./utils": "./utils/index.ts",
+    "./constants": "./constants/index.ts"
+  }
+}

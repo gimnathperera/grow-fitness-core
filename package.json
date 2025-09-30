@@ -1,0 +1,42 @@
+{
+  "name": "grow-fitness-monorepo",
+  "version": "1.0.0",
+  "description": "Grow Fitness - Client and Server Monorepo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --parallel --recursive run dev",
+    "dev:client": "pnpm --filter client run dev",
+    "dev:server": "pnpm --filter server run start:dev",
+    "build": "pnpm --recursive run build",
+    "build:client": "pnpm --filter client run build",
+    "build:server": "pnpm --filter server run build",
+    "lint": "pnpm --recursive run lint",
+    "lint:fix": "pnpm --recursive run lint:fix",
+    "format": "pnpm --recursive run format",
+    "format:check": "pnpm --recursive run format:check",
+    "type-check": "pnpm --recursive run type-check",
+    "test": "pnpm --recursive run test",
+    "clean": "pnpm --recursive run clean",
+    "clean:all": "rm -rf node_modules client/node_modules server/node_modules client/dist server/dist && pnpm install",
+    "setup": "bash scripts/setup-monorepo.sh",
+    "install:all": "pnpm install",
+    "start:prod": "pnpm --filter server run start:prod"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "typescript": "~5.8.3",
+    "prettier": "^3.6.2",
+    "eslint": "^9.33.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0",
+  "workspaces": [
+    "client",
+    "server",
+    "shared"
+  ]
+}
