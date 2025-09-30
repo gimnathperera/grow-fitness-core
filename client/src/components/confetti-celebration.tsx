@@ -15,12 +15,16 @@ interface ConfettiCelebrationProps {
   isVisible: boolean;
   duration?: number;
   onComplete?: () => void;
+  title?: string;
+  message?: string;
 }
 
 const ConfettiCelebration: React.FC<ConfettiCelebrationProps> = ({
   isVisible,
   duration = 3000,
   onComplete,
+  title = 'Success!',
+  message = 'Kids details added successfully!',
 }) => {
   const [confettiPieces, setConfettiPieces] = useState<ConfettiPiece[]>([]);
 
@@ -35,7 +39,7 @@ const ConfettiCelebration: React.FC<ConfettiCelebrationProps> = ({
       '#84CC16', // lime-500
       '#F97316', // orange-500
     ],
-    [],
+    []
   );
 
   const emojis = ['🎉', '⭐', '🌟', '💪', '🏆', '🎊', '✨', '🎈'];
@@ -68,7 +72,7 @@ const ConfettiCelebration: React.FC<ConfettiCelebrationProps> = ({
   }, [isVisible, duration, onComplete, colors]);
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+    <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden">
       <AnimatePresence>
         {isVisible && (
           <>
@@ -168,7 +172,7 @@ const ConfettiCelebration: React.FC<ConfettiCelebrationProps> = ({
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.4, duration: 0.5 }}
                 >
-                  Success!
+                  {title}
                 </motion.h2>
                 <motion.p
                   className="text-lg text-gray-600"
@@ -176,7 +180,7 @@ const ConfettiCelebration: React.FC<ConfettiCelebrationProps> = ({
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.5, duration: 0.5 }}
                 >
-                  Kids details added successfully!
+                  {message}
                 </motion.p>
               </motion.div>
             </motion.div>

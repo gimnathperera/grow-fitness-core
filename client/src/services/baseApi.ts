@@ -10,7 +10,7 @@ import { clearSession, selectAuth, setTokens } from '@/auth/authSlice';
 import { normalizeApiError } from '@/services/errorNormalizer';
 
 const DEFAULT_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
+  import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3001';
 
 type RefreshResponse = {
   ok: boolean;
@@ -41,7 +41,7 @@ type BaseQueryReturn = Awaited<ReturnType<typeof rawBaseQuery>>;
 export const baseQueryWithReauth: CustomBaseQuery = async (
   args,
   api,
-  extraOptions,
+  extraOptions
 ) => {
   let result = await rawBaseQuery(args, api, extraOptions);
 
@@ -60,7 +60,7 @@ export const baseQueryWithReauth: CustomBaseQuery = async (
           body: { refreshToken },
         },
         api,
-        extraOptions,
+        extraOptions
       );
 
       const parsed = refreshResult.data as RefreshResponse | undefined;
@@ -98,6 +98,7 @@ export const baseApi = createApi({
     'Notification',
     'Pass',
     'Milestone',
+    'CollectInfo',
   ],
   endpoints: () => ({}),
 });
