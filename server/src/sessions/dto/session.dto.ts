@@ -19,6 +19,11 @@ export class CreateSessionDto {
   @IsMongoId()
   coachId: string;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsMongoId()
+  kidId?: string;
+
   @ApiProperty()
   @IsDateString()
   startsAt: string;

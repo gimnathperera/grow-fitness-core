@@ -77,6 +77,7 @@ export class SessionsService {
     filters: {
       clientId?: string;
       coachId?: string;
+      kidId?: string;
       status?: SessionStatus;
       dateFrom?: string;
       dateTo?: string;
@@ -87,6 +88,7 @@ export class SessionsService {
     const {
       clientId,
       coachId,
+      kidId,
       status,
       dateFrom,
       dateTo,
@@ -97,6 +99,7 @@ export class SessionsService {
     const query: any = {};
     if (clientId) query.clientId = clientId;
     if (coachId) query.coachId = coachId;
+    if (kidId) query.kidId = kidId;
     if (status) query.status = status;
 
     if (dateFrom || dateTo) {
@@ -112,6 +115,7 @@ export class SessionsService {
         .find(query)
         .populate("clientId", "userId goals fitnessLevel")
         .populate("coachId", "userId specialties hourlyRate")
+        .populate("kidId", "name age gender")
         .skip(skip)
         .limit(limit)
         .sort({ startsAt: 1 }),

@@ -76,6 +76,14 @@ export class CreateKidDto {
 
 export class UpdateKidDto {
   @ApiProperty({
+    description: 'Assigned coach ID (one coach per kid)',
+    example: '507f1f77bcf86cd799439099',
+    required: false,
+  })
+  @IsString()
+  coachId?: string;
+
+  @ApiProperty({
     description: "Full name of the child",
     example: "Emma Johnson",
     minLength: 2,

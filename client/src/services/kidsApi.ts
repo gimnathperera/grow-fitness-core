@@ -13,6 +13,16 @@ export interface CreateKidRequest {
 
 export type CreateKidsPayload = CreateKidRequest[];
 
+export type UpdateKidPayload = Partial<{
+  coachId: string | null;
+  name: string;
+  gender: 'girl' | 'boy';
+  age: number;
+  location: string;
+  isInSports: boolean;
+  preferredTrainingStyle: 'personal' | 'group';
+}>;
+
 export const kidsApi = baseApi.injectEndpoints({
   endpoints: builder => ({
     getKids: builder.query<ApiSuccessResponse<any[]>, { parentId?: string } | void>({
@@ -30,6 +40,14 @@ export const kidsApi = baseApi.injectEndpoints({
       }),
       providesTags: (_, __, id) => [{ type: 'Kid', id }, 'Kid'],
     }),
+    updateKid: builder.mutation<ApiSuccessResponse<any>, { id: string; payload: UpdateKidPayload }>({
+      query: ({ id, payload }) => ({
+        url: `/kids/${id}`,
+        method: 'PATCH',
+        body: payload,
+      }),
+      invalidatesTags: (_, __, { id }) => [{ type: 'Kid', id }, 'Kid'],
+    }),
     createKids: builder.mutation<
       ApiSuccessResponse<unknown>,
       CreateKidsPayload
@@ -45,4 +63,4 @@ export const kidsApi = baseApi.injectEndpoints({
   overrideExisting: false,
 });
 
-export const { useCreateKidsMutation, useGetKidQuery, useGetKidsQuery, useLazyGetKidQuery } = kidsApi;
+export const { useCreateKidsMutation, useGetKidQuery, useGetKidsQuery, useLazyGetKidQuery, useUpdateKidMutation } = kidsApi;

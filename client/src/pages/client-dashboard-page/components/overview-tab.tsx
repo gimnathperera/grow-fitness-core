@@ -19,7 +19,7 @@ export function OverviewTab({ childData }: OverviewTabProps) {
 
   const displayName = kidResp?.data?.name ?? childData?.name;
   const displayAge = kidResp?.data?.age ?? childData?.age;
-  const displayCoach = childData?.coach;
+  const displayCoach = (kidResp?.data as any)?.coach?.name ?? childData?.coach;
 
   return (
     <div className="space-y-6">

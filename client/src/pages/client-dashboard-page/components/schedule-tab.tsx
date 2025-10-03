@@ -1,83 +1,105 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, Plus } from 'lucide-react';
-import type { Session } from '@/types/dashboard';
 import SessionDetailsModal from '@/components/session-details-modal';
 import BookSessionModal from './book-session-modal';
+import { useGetSessionsQuery, useCreateSessionMutation } from '@/services/sessionsRtkApi';
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/store';
+import { useGetKidQuery } from '@/services/kidsApi';
 
-interface DaySchedule {
-  day: string;
-  sessions: Session[];
-}
+const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-const weeklySchedule: DaySchedule[] = [
-  {
-    day: 'Monday',
-    sessions: [
-      {
-        id: 1,
-        name: 'Kids Fitness Fun',
-        time: '3:00 PM - 4:00 PM',
-        studentsCount: 3,
-        status: 'next',
-        type: 'group',
-        location: 'Gym A',
-        students: ['Alice', 'Bob', 'Charlie'],
-        dates: ['2025-09-01', '2025-09-08'],
-      },
-      {
-        id: 3,
-        name: 'Teen Strength',
-        time: '6:00 PM - 7:00 PM',
-        studentsCount: 3,
-        status: 'next',
-        type: 'group',
-        location: 'Gym B',
-        students: ['David', 'Eva', 'Frank'],
-        dates: ['2025-09-02', '2025-09-09'],
-      },
-    ],
-  },
-  {
-    day: 'Wednesday',
-    sessions: [
-      {
-        id: 2,
-        name: 'Obstacle Course',
-        time: '4:30 PM - 5:30 PM',
-        studentsCount: 3,
-        status: 'next',
-        type: 'individual',
-        location: 'Outdoor Arena',
-        students: ['George'],
-        dates: ['2025-09-03', '2025-09-10'],
-      },
-    ],
-  },
-];
-
-const SessionCard = ({
-  session,
-  onClick,
-}: {
-  session: Session;
-  onClick: () => void;
-}) => (
-  <div
-    onClick={onClick}
-    className="p-3 bg-[#23B685]/5 rounded-lg cursor-pointer hover:bg-[#23B685]/10 transition-colors"
-  >
-    <p className="text-sm font-medium">{session.name}</p>
-    <p className="text-xs text-gray-600">{session.time}</p>
+const SessionTile = ({ title, subtitle }: { title: string; subtitle: string }) => (
+  <div className="p-2 bg-[#23B685]/5 rounded-lg text-center">
+    <p className="text-sm font-medium">{title}</p>
+    <p className="text-xs text-gray-600">{subtitle}</p>
   </div>
 );
 
 export default function ScheduleTab() {
-  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+  const [selectedSession, setSelectedSession] = useState<any>(null);
   const [openBooking, setOpenBooking] = useState(false);
+
+  // Month filter input (yyyy-mm)
+  const [month, setMonth] = useState<string>(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
+
+  const selectedKidId = useSelector((state: RootState) => state.auth.selectedKidId);
+  const { data: kidResp } = useGetKidQuery(selectedKidId as string, { skip: !selectedKidId });
+  const coachId: string | undefined =
+    (kidResp?.data as any)?.coach?.id || (kidResp?.data as any)?.coachId;
+
+  // Compute month range (start → end of selected month)
+  const [dateFrom, dateTo] = useMemo(() => {
+    if (!month) return [undefined, undefined] as const;
+    const [yStr, mStr] = month.split('-');
+    const y = Number(yStr);
+    const m = Number(mStr) - 1;
+    const start = new Date(y, m, 1, 0, 0, 0, 0);
+    const end = new Date(y, m + 1, 0, 23, 59, 59, 999);
+    return [start.toISOString(), end.toISOString()] as const;
+  }, [month]);
+
+  // Fetch sessions filtered by month & coach
+  const sessionsParams =
+    coachId && dateFrom && dateTo ? { coachId, dateFrom, dateTo, page: 1, limit: 50 } : undefined;
+
+  const { data: sessionsResp, isFetching: loadingSessions } = useGetSessionsQuery(
+    sessionsParams as any
+  );
+
+  const [createSession] = useCreateSessionMutation();
+  const sessions = (sessionsResp?.data as any)?.sessions || [];
+
+  // Group by weekdays (Mon–Sat only)
+  const groupedByDay: Record<string, any[]> = useMemo(() => {
+    const groups: Record<string, any[]> = {};
+    for (const day of daysOfWeek) groups[day] = [];
+
+    sessions.forEach((s: any) => {
+      if (s?.startsAt) {
+        const d = new Date(s.startsAt);
+        const weekdayIndex = d.getDay(); // Sunday=0, Monday=1, ... Saturday=6
+        if (weekdayIndex >= 1 && weekdayIndex <= 6) {
+          const dayName = daysOfWeek[weekdayIndex - 1];
+          groups[dayName].push(s);
+        }
+      }
+    });
+
+    // Sort by start time within each day
+    for (const day of daysOfWeek) {
+      groups[day].sort(
+        (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()
+      );
+    }
+    return groups;
+  }, [sessions]);
+
+  const toTitle = (s: any) => s?.sessionType || s?.name || 'Session';
+  const toSubtitle = (s: any) => {
+    const starts = s?.startsAt ? new Date(s.startsAt) : null;
+    const ends = s?.endsAt ? new Date(s.endsAt) : null;
+    if (starts && ends) {
+      return `${starts.toLocaleDateString()} ${starts.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      })} - ${ends.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    }
+    if (starts) {
+      return `${starts.toLocaleDateString()} ${starts.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      })}`;
+    }
+    return '';
+  };
 
   const handleBookingConfirm = (data: {
     coach: string;
@@ -85,44 +107,56 @@ export default function ScheduleTab() {
     date: Date | undefined;
     time: string;
   }) => {
-    console.log('Booking confirmed:', {
-      session: selectedSession,
-      ...data,
-    });
+    console.log('Booking confirmed:', { session: selectedSession, ...data });
     // TODO: send booking request to backend
   };
 
   return (
     <>
       <Card className="border-[#23B685]/20">
-        <CardHeader>
-          <CardTitle className="text-[#243E36] flex items-center justify-between">
-            <span className="flex items-center">
-              <Calendar className="mr-2 h-5 w-5" />
-              Weekly Schedule
-            </span>
-            <Button
-              size="sm"
-              className="!bg-primary hover:!bg-primary/90 text-white"
-              onClick={() => setOpenBooking(true)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Extra Session
-            </Button>
+        <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <CardTitle className="text-[#243E36] flex items-center">
+            <Calendar className="mr-2 h-5 w-5" />
+            Upcoming Sessions
           </CardTitle>
+
+          {/* Month filter */}
+          <input
+            type="month"
+            value={month}
+            onChange={(e) => setMonth(e.target.value)}
+            className="border rounded-md p-2 text-sm"
+          />
+
+          <Button
+            size="sm"
+            className="!bg-primary hover:!bg-primary/90 text-white"
+            onClick={() => setOpenBooking(true)}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Extra Session
+          </Button>
         </CardHeader>
+
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {weeklySchedule.map(({ day, sessions }) => (
-              <div key={day} className="space-y-3">
-                <h3 className="font-semibold text-[#243E36]">{day}</h3>
-                {sessions.map(session => (
-                  <SessionCard
-                    key={session.id}
-                    session={session}
-                    onClick={() => setSelectedSession(session)}
-                  />
-                ))}
+          {/* Horizontal week layout */}
+          <div className="grid grid-cols-6 gap-4">
+            {daysOfWeek.map((day) => (
+              <div key={day} className="flex flex-col items-center">
+                <h3 className="text-sm font-semibold mb-2">{day}</h3>
+                {groupedByDay[day]?.length === 0 ? (
+                  <p className="text-xs text-gray-500">No sessions</p>
+                ) : (
+                  <div className="flex flex-col gap-2 w-full">
+                    {groupedByDay[day].map((s: any, idx: number) => (
+                      <SessionTile
+                        key={s?._id || idx}
+                        title={toTitle(s)}
+                        subtitle={toSubtitle(s)}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -136,7 +170,7 @@ export default function ScheduleTab() {
         onClose={() => setSelectedSession(null)}
       />
 
-      {/* Book Session button shown only if a session is selected */}
+      {/* Floating booking button */}
       {selectedSession && (
         <div className="fixed bottom-6 right-6 flex justify-end">
           <Button

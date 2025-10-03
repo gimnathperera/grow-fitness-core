@@ -23,6 +23,9 @@ export class Session {
   @Prop({ required: true, type: Types.ObjectId, ref: "Coach" })
   coachId: Types.ObjectId;
 
+  @Prop({ required: false, type: Types.ObjectId, ref: "Kid" })
+  kidId?: Types.ObjectId;
+
   @Prop({ required: true })
   startsAt: Date;
 
@@ -82,6 +85,7 @@ export const SessionSchema = SchemaFactory.createForClass(Session);
 // Indexes
 SessionSchema.index({ clientId: 1, startsAt: 1 });
 SessionSchema.index({ coachId: 1, startsAt: 1 });
+SessionSchema.index({ kidId: 1, startsAt: 1 });
 SessionSchema.index({ status: 1 });
 SessionSchema.index({ startsAt: 1, endsAt: 1 });
 SessionSchema.index({ createdAt: -1 });

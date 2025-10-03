@@ -27,11 +27,6 @@ export function ProgressTab() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center mb-4">
-            <div className="text-4xl font-bold text-[#23B685]">75%</div>
-            <p className="text-gray-600">Great job!</p>
-          </div>
-
           {/* InProgressTab now handles Fitness/Wellness/Nutrition tasks with coach logic */}
           <InProgressTab tasks={tasks} isCoach={false} />
         </CardContent>

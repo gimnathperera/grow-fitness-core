@@ -30,9 +30,16 @@ export interface KidParentSummary {
   kidsDataCompleted?: boolean;
 }
 
+export interface KidCoachSummary {
+  id: string;
+  name?: string;
+  userId?: string;
+}
+
 export interface KidView {
   _id: string;
   parentId: string;
+  coachId?: string;
   name: string;
   gender: "boy" | "girl";
   age: number;
@@ -42,6 +49,7 @@ export interface KidView {
   createdAt: string;
   updatedAt: string;
   parent?: KidParentSummary;
+  coach?: KidCoachSummary;
 }
 
 export interface KidBulkCreateSummary {
@@ -71,6 +79,7 @@ export class KidsService {
       path: "parent",
       select: "name email phone kidsDataCompleted",
     });
+    await kid.populate({ path: "coach", populate: { path: "userId", select: "name" } });
 
     return this.mapKidResponse(kid);
   }
@@ -130,6 +139,7 @@ export class KidsService {
         path: "parent",
         select: "name email phone kidsDataCompleted",
       })
+      .populate({ path: "coach", populate: { path: "userId", select: "name" } })
       .exec();
 
     return kids.map((kid) => this.mapKidResponse(kid));
@@ -142,6 +152,7 @@ export class KidsService {
         path: "parent",
         select: "name email phone kidsDataCompleted",
       })
+      .populate({ path: "coach", populate: { path: "userId", select: "name" } })
       .exec();
     if (!kid) {
       throw new NotFoundException("Kid not found");
@@ -156,6 +167,7 @@ export class KidsService {
         path: "parent",
         select: "name email phone kidsDataCompleted",
       })
+      .populate({ path: "coach", populate: { path: "userId", select: "name" } })
       .exec();
 
     if (!kid) {
@@ -188,17 +200,27 @@ export class KidsService {
 
     const parent = source.parent
       ? {
-          id: source.parent._id.toString(),
-          name: source.parent.name,
-          email: source.parent.email,
-          phone: source.parent.phone,
-          kidsDataCompleted: source.parent.kidsDataCompleted,
+        id: source.parent._id.toString(),
+        name: source.parent.name,
+        email: source.parent.email,
+        phone: source.parent.phone,
+        kidsDataCompleted: source.parent.kidsDataCompleted,
+      }
+      : undefined;
+
+    const coachRaw: any = (source as any).coach;
+    const coach = coachRaw
+      ? {
+          id: coachRaw._id?.toString?.() ?? String(coachRaw),
+          name: coachRaw.userId?.name,
+          userId: coachRaw.userId?._id?.toString?.(),
         }
       : undefined;
 
     return {
       _id: source._id.toString(),
       parentId: source.parentId?.toString() as string,
+      ...(source.coachId ? { coachId: source.coachId.toString() } : {} as any),
       name: source.name,
       gender: source.gender,
       age: source.age,
@@ -212,6 +234,7 @@ export class KidsService {
         ? source.updatedAt.toISOString()
         : new Date(source.updatedAt).toISOString(),
       ...(parent ? { parent } : {}),
+      ...(coach ? { coach } : {}),
     };
   }
 }

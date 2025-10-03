@@ -68,6 +68,7 @@ export class SessionsController {
   })
   @ApiQuery({ name: "clientId", required: false })
   @ApiQuery({ name: "coachId", required: false })
+  @ApiQuery({ name: "kidId", required: false })
   @ApiQuery({ name: "status", required: false, enum: SessionStatus })
   @ApiQuery({ name: "dateFrom", required: false })
   @ApiQuery({ name: "dateTo", required: false })
@@ -78,6 +79,7 @@ export class SessionsController {
     query: PageQueryDto & {
       clientId?: string;
       coachId?: string;
+      kidId?: string;
       status?: SessionStatus;
       dateFrom?: string;
       dateTo?: string;
@@ -88,6 +90,7 @@ export class SessionsController {
     const { sessions, total } = await this.sessionsService.findAll({
       clientId: query.clientId,
       coachId: query.coachId,
+      kidId: query.kidId,
       status: query.status,
       dateFrom: query.dateFrom,
       dateTo: query.dateTo,
