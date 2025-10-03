@@ -8,12 +8,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "@/store";
+import { setSelectedKidId } from "@/auth/authSlice";
+import { useLazyGetKidQuery, useGetKidsQuery } from "@/services/kidsApi";
 
 export function DashboardHeader() {
   // Get full user object from Redux auth slice
   const user = useSelector((state: RootState) => state.auth.user);
+
+  console.log("User from Redux:", user);
 
   const roleConfig = {
     parent: {
@@ -64,14 +68,47 @@ export function DashboardHeader() {
   };
 
   const config = user ? roleConfig[user.role] : null;
+
+  const dispatch = useDispatch();
   const [selectedKid, setSelectedKid] = useState<string>("");
+  const [triggerGetKid, { data: kidResp, isFetching: isKidLoading }]= useLazyGetKidQuery();
+  // If Redux user doesn't contain kids, fallback to API
+  const { data: kidsListResp } = useGetKidsQuery(user?.role === "client" ? {} : undefined, { skip: user?.role !== "client" });
+
+  // Resolve unified kids list for UI rendering
+  const userKids = (user as any)?.kids as Array<{ id: string; name: string }> | undefined;
+  const apiKids = (kidsListResp?.data as any[])?.map((k: any) => ({ id: String(k._id || k.id), name: k.name })) || [];
+  const kidsForUi: Array<{ id: string; name: string }> = userKids?.length ? userKids.map((k: { id: string; name: string }) => ({ id: String(k.id), name: k.name })) : apiKids;
 
   useEffect(() => {
-    // Adjust this logic if your backend provides children separately
-    if (user?.role === "client" && (user as any).kids?.length) {
-      setSelectedKid(String((user as any).kids[0].id));
+    console.log("User in useEffect:", user);
+    if (user?.role === "client") {
+      const userKids = (user as any)?.kids as Array<{ id: string; name: string }> | undefined;
+      if (userKids?.length) {
+        const firstId = String(userKids[0].id);
+        setSelectedKid(firstId);
+        dispatch(setSelectedKidId(firstId));
+        console.log("Selected kid set to (from user):", userKids[0].id);
+        return;
+      }
+      // Fallback to fetched kids list
+      const apiKids = (kidsListResp?.data as any[]) ?? [];
+      if (apiKids.length) {
+        const firstId = String(apiKids[0]._id || apiKids[0].id);
+        setSelectedKid(firstId);
+        dispatch(setSelectedKidId(firstId));
+        console.log("Selected kid set to (from api):", apiKids[0]._id || apiKids[0].id);
+      }
     }
-  }, [user]);
+  }, [user, kidsListResp]);
+
+  // Fetch kid details when selectedKid changes (or initially when default is set)
+  useEffect(() => {
+    if (user?.role === "client" && selectedKid) {
+      dispatch(setSelectedKidId(selectedKid));
+      triggerGetKid(selectedKid);
+    }
+  }, [user?.role, selectedKid, triggerGetKid]);
 
   if (!user) {
     return (
@@ -90,26 +127,42 @@ export function DashboardHeader() {
             {config?.greeting}
           </h1>
           <p className="text-xs sm:text-sm text-gray-500">{config?.subtitle}</p>
+          {user.role === "client" && selectedKid && (
+            <p className="text-[11px] text-gray-400 mt-1">
+              {isKidLoading
+                ? "Loading kid details..."
+                : kidResp?.data?.name
+                ? `Selected: ${kidResp.data.name}`
+                : (() => {
+                    const fallback = kidsForUi.find(k => k.id === selectedKid);
+                    return fallback ? `Selected: ${fallback.name}` : null;
+                  })()}
+            </p>
+          )}
         </div>
 
         {/* Right side: kid selection (only for parents) */}
         {user.role === "client" && (
           <div>
-            {(user as any).kids && (user as any).kids.length > 0 ? (
-              (user as any).kids.length === 1 ? (
+            {kidsForUi && kidsForUi.length > 0 ? (
+              kidsForUi.length === 1 ? (
                 <span className="px-3 py-1 rounded-md bg-gray-100 text-sm font-medium text-gray-700 shadow-sm">
-                  {(user as any).kids[0].name}
+                  {kidsForUi[0].name}
                 </span>
               ) : (
                 <Select
                   value={selectedKid}
-                  onValueChange={(val) => setSelectedKid(val)}
+                  onValueChange={(val) => {
+                    setSelectedKid(val);
+                    dispatch(setSelectedKidId(val));
+                    console.log("Kid selected:", val);
+                  }}
                 >
                   <SelectTrigger className="w-[160px] text-sm">
                     <SelectValue placeholder="Select Kid" />
                   </SelectTrigger>
                   <SelectContent>
-                    {(user as any).kids.map((kid: any) => (
+                    {kidsForUi.map((kid) => (
                       <SelectItem key={kid.id} value={String(kid.id)}>
                         {kid.name}
                       </SelectItem>
@@ -128,3 +181,4 @@ export function DashboardHeader() {
     </div>
   );
 }
+

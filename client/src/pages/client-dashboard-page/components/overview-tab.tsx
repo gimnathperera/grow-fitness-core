@@ -1,6 +1,9 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { User } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/store';
+import { useGetKidQuery } from '@/services/kidsApi';
 
 interface OverviewTabProps {
   childData: {
@@ -11,6 +14,13 @@ interface OverviewTabProps {
 }
 
 export function OverviewTab({ childData }: OverviewTabProps) {
+  const selectedKidId = useSelector((state: RootState) => state.auth.selectedKidId);
+  const { data: kidResp, isFetching: isKidLoading } = useGetKidQuery(selectedKidId as string, { skip: !selectedKidId });
+
+  const displayName = kidResp?.data?.name ?? childData?.name;
+  const displayAge = kidResp?.data?.age ?? childData?.age;
+  const displayCoach = childData?.coach;
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -30,9 +40,9 @@ export function OverviewTab({ childData }: OverviewTabProps) {
                 </div>
                 <div>
                   <h3 className="font-semibold text-[#243E36]">
-                    {childData.name}
+                    {isKidLoading ? 'Loading...' : displayName}
                   </h3>
-                  <p className="text-gray-600">{childData.age} years old</p>
+                  <p className="text-gray-600">{displayAge} years old</p>
                   <Badge
                     variant="secondary"
                     className="bg-[#23B685]/10 text-[#23B685]"
@@ -45,7 +55,7 @@ export function OverviewTab({ childData }: OverviewTabProps) {
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Current Coach:</span>
                   <span className="text-sm font-medium text-[#243E36]">
-                    {childData.coach}
+                    {displayCoach}
                   </span>
                 </div>
                 <div className="flex justify-between">

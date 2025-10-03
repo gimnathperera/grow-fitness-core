@@ -5,6 +5,7 @@ export interface PersistedAuthState {
   refreshToken: string | null;
   expiresAt: string | null;
   user: components['schemas']['UserProfileDto'] | null;
+  selectedKidId?: string | null;
 }
 
 const STORAGE_KEY = 'grow-fitness/auth';
@@ -41,6 +42,7 @@ export const loadAuthState = (): PersistedAuthState | null => {
       refreshToken: parsed.refreshToken ?? null,
       expiresAt: parsed.expiresAt ?? null,
       user: parsed.user ?? null,
+      selectedKidId: parsed.selectedKidId ?? null,
     };
   } catch (error) {
     console.warn('[auth] Failed to parse persisted state:', error);

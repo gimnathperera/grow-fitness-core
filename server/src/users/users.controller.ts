@@ -109,22 +109,36 @@ export class UsersController {
   async findOne(
     @Param("id") id: string
   ): Promise<SuccessResponseDto<UserProfileDto>> {
-    const user = await this.usersService.findById(id);
-    if (!user) {
+    // If the user is a client, include kids summary (id, name)
+    const base = await this.usersService.findById(id);
+    if (!base) {
       throw new Error("User not found");
     }
 
-    const profile = {
-      id: user._id.toString(),
-      email: user.email,
-      name: user.name,
-      phone: user.phone,
-      role: user.role,
-      status: user.status,
-      kidsDataCompleted: user.kidsDataCompleted,
-      createdAt: user.createdAt.toISOString(),
-      updatedAt: user.updatedAt.toISOString(),
+    let kids: { id: string; name: string }[] | undefined;
+    if (base.role === UserRole.CLIENT) {
+      const populated = await this.usersService.findParentWithKids(id);
+      const populatedKids = (populated?.kids as any[]) || [];
+      kids = populatedKids
+        .filter((k) => !!k)
+        .map((k: any) => ({ id: (k._id ?? k).toString(), name: k.name }))
+        .filter((k) => !!k.name);
+    }
+
+    const profile: any = {
+      id: base._id.toString(),
+      email: base.email,
+      name: base.name,
+      phone: base.phone,
+      role: base.role,
+      status: base.status,
+      kidsDataCompleted: base.kidsDataCompleted,
+      createdAt: base.createdAt.toISOString(),
+      updatedAt: base.updatedAt.toISOString(),
     };
+    if (kids && kids.length) {
+      profile.kids = kids;
+    }
 
     return {
       ok: true,
@@ -150,7 +164,7 @@ export class UsersController {
   })
   async update(
     @Param("id") id: string,
-    @Body() updateData: Partial<UserProfileDto>
+    @Body() updateData: Partial<Omit<UserProfileDto, 'kids'>>
   ): Promise<SuccessResponseDto<UserProfileDto>> {
     const user = await this.usersService.update(id, updateData);
 
