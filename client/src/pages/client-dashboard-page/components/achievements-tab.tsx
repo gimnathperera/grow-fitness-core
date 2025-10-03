@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Star, Heart, Trophy } from 'lucide-react';
+import { BadgeMap } from './tressure-map';
 
 export function AchievementsTab() {
   return (
@@ -12,7 +13,7 @@ export function AchievementsTab() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {/* <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div className="text-center p-4 border border-[#23B685]/20 rounded-lg">
               <div className="w-16 h-16 bg-[#FFFD77] rounded-full flex items-center justify-center mx-auto mb-2">
                 <Star className="h-8 w-8 text-[#243E36]" />
@@ -42,7 +43,8 @@ export function AchievementsTab() {
               </h3>
               <p className="text-xs text-gray-600">Consistency champion</p>
             </div>
-          </div>
+          </div> */}
+          <BadgeMap/>
         </CardContent>
       </Card>
     </div>
