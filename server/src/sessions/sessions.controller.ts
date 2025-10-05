@@ -174,6 +174,25 @@ export class SessionsController {
     };
   }
 
+  @Get("check-availability")
+  @Roles(UserRole.ADMIN, UserRole.TEAM, UserRole.COACH, UserRole.CLIENT)
+  @ApiOperation({ summary: "Get coach availability (generated slots)" })
+  @ApiResponse({ status: 200, description: "Coach availability retrieved successfully" })
+  @ApiQuery({ name: "coachId", required: true })
+  async getAvailabilityByCoach(
+    @Query("coachId") coachId: string
+  ): Promise<SuccessResponseDto<any>> {
+    const data = await this.sessionsService.getAvailabilityByCoach(coachId);
+    return {
+      ok: true,
+      data,
+      meta: {
+        traceId: "get-availability-by-coach",
+        timestamp: new Date().toISOString(),
+      },
+    };
+  }
+
   @Get("stats")
   @Roles(UserRole.ADMIN, UserRole.TEAM, UserRole.COACH)
   @ApiOperation({ summary: "Get session statistics" })

@@ -7,62 +7,76 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 
 import type {
-  Coach,
   BookSessionData,
   AvailabilityData,
   TimeSlot,
 } from '@/types/session-booking';
-import { fetchCoaches, fetchAvailability } from '@/services/sessionsApi';
 import { Button } from '@/components/ui/button';
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/store';
+import { useGetKidQuery } from '@/services/kidsApi';
+import { useGetAvailabilityByCoachQuery, useCreateSessionMutation } from '@/services/sessionsRtkApi';
 
 interface BookSessionModalProps {
   open: boolean;
   onClose: () => void;
   onConfirm: (data: BookSessionData) => void;
 }
-
 export default function BookSessionModal({
   open,
   onClose,
   onConfirm,
 }: BookSessionModalProps) {
-  const [coaches, setCoaches] = useState<Coach[]>([]);
-  const [availability, setAvailability] = useState<AvailabilityData | null>(
-    null,
-  );
+  // Using RTK query for availability and create session
+  const [createSession, { isLoading: creating } ] = useCreateSessionMutation();
 
-  const [coach, setCoach] = useState('');
-  const [type, setType] = useState('');
+  // Derived from selected kid
+  const selectedKidId = useSelector((state: RootState) => state.auth.selectedKidId);
+  const { data: kidResp } = useGetKidQuery(selectedKidId as string, { skip: !selectedKidId });
+  const currentUser = useSelector((state: RootState) => state.auth.user);
+  const clientId: string | undefined = currentUser
+    ? String((currentUser as any).id || (currentUser as any)._id)
+    : undefined;
+  const coachId: string | undefined =
+    (kidResp?.data as any)?.coach?.id || (kidResp?.data as any)?.coachId;
+  const coachNameFromKid: string | undefined =
+    (kidResp?.data as any)?.coach?.name || (kidResp?.data as any)?.coachName;
+  const [coachDisplayName, setCoachDisplayName] = useState<string | undefined>(undefined);
+
+  // Log kid and coach info
+  useEffect(() => {
+    console.log('[BookSessionModal] selectedKidId:', selectedKidId);
+    console.log('[BookSessionModal] kidResp:', kidResp);
+    console.log('[BookSessionModal] coachId from kid:', coachId);
+    console.log('[BookSessionModal] coachName from kid:', coachNameFromKid);
+    if (coachNameFromKid) setCoachDisplayName(coachNameFromKid);
+  }, [selectedKidId, kidResp, coachId, coachNameFromKid]);
+
+  // No direct API calls here per project structure; rely on kid payload only
+
+  // Fixed type: Personal Training
+  const type = 'personal_training';
+
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [time, setTime] = useState('');
 
-  // Fetch coaches on mount
-  useEffect(() => {
-    fetchCoaches().then(setCoaches);
-  }, []);
+  // Availability via RTK (GET /sessions/check-availability)
+  const { data: availabilityResp, isFetching: fetchingAvailability } = useGetAvailabilityByCoachQuery(
+    { coachId: coachId as string },
+    { skip: !coachId }
+  );
+  const availability: AvailabilityData | null = (availabilityResp?.data as unknown as AvailabilityData) ?? null;
 
-  // Fetch availability when coach or type changes
+  // Reset picks when coach changes or availability refetches
   useEffect(() => {
-    if (coach && type) {
-      fetchAvailability(coach, type).then(data => {
-        setAvailability(data);
-        setDate(undefined);
-        setTime('');
-        setTimeSlots([]);
-      });
-    }
-  }, [coach, type]);
+    setDate(undefined);
+    setTime('');
+    setTimeSlots([]);
+  }, [coachId]);
 
   // Update time slots when date changes
   useEffect(() => {
@@ -77,9 +91,35 @@ export default function BookSessionModal({
     }
   }, [date, availability]);
 
-  const handleConfirm = () => {
-    onConfirm({ coach, type, date, time });
-    onClose();
+  const handleConfirm = async () => {
+    if (!coachId || !selectedKidId || !date || !time || !clientId) return;
+    // Combine date and time => ISO, assume 60-minute duration
+    const [hh, mm] = time.split(':').map(Number);
+    const starts = new Date(date);
+    starts.setHours(hh, mm ?? 0, 0, 0);
+    const ends = new Date(starts.getTime() + 60 * 60 * 1000);
+
+    try {
+      console.log('[BookSessionModal] creating session with:', {
+        coachId,
+        clientId,
+        kidId: selectedKidId,
+        startsAt: starts.toISOString(),
+        endsAt: ends.toISOString(),
+      });
+      await createSession({
+        coachId,
+        clientId,
+        kidId: selectedKidId,
+        startsAt: starts.toISOString(),
+        endsAt: ends.toISOString(),
+        sessionType: 'Personal Training',
+      } as any).unwrap();
+      onConfirm({ coach: coachId, type, date, time });
+      onClose();
+    } catch (e) {
+      console.error('[BookSessionModal] create session failed', e);
+    }
   };
 
   const isDateAvailable = (currentDate: Date) =>
@@ -112,47 +152,20 @@ export default function BookSessionModal({
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6 space-y-6">
-          {/* Coach Selection */}
-          <div className="space-y-2">
-            <Label className="text-sm sm:text-base font-medium text-gray-700 block">
-              Coach
-            </Label>
-            <Select value={coach} onValueChange={setCoach}>
-              <SelectTrigger className="w-full h-11 sm:h-12 text-sm sm:text-base border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
-                <SelectValue placeholder="Select a coach" />
-              </SelectTrigger>
-              <SelectContent className="text-sm sm:text-base z-[1050] max-h-60">
-                {coaches.map(c => (
-                  <SelectItem
-                    key={c.id}
-                    value={c.id}
-                    className="py-2.5 sm:py-3"
-                  >
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Coach (from kid) */}
+          <div className="space-y-1">
+            <Label className="text-sm sm:text-base font-medium text-gray-700 block">Coach</Label>
+            <div className="h-11 sm:h-12 w-full border border-gray-300 rounded-md flex items-center px-3 bg-gray-50 text-gray-700">
+              {coachDisplayName ?? (coachId ? 'Loading...' : 'No coach assigned')}
+            </div>
           </div>
 
-          {/* Session Type */}
-          <div className="space-y-2">
-            <Label className="text-sm sm:text-base font-medium text-gray-700 block">
-              Session Type
-            </Label>
-            <Select value={type} onValueChange={setType}>
-              <SelectTrigger className="w-full h-11 sm:h-12 text-sm sm:text-base border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
-                <SelectValue placeholder="Select type" />
-              </SelectTrigger>
-              <SelectContent className="text-sm sm:text-base z-[1050] max-h-60">
-                <SelectItem value="group" className="py-2.5 sm:py-3">
-                  Group Session
-                </SelectItem>
-                <SelectItem value="individual" className="py-2.5 sm:py-3">
-                  Individual Session
-                </SelectItem>
-              </SelectContent>
-            </Select>
+          {/* Session Type (fixed) */}
+          <div className="space-y-1">
+            <Label className="text-sm sm:text-base font-medium text-gray-700 block">Session Type</Label>
+            <div className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-[#23B685]/10 text-[#23B685] text-sm font-medium">
+              Personal Training
+            </div>
           </div>
 
           {/* Date Selection */}
@@ -204,7 +217,7 @@ export default function BookSessionModal({
             </Button>
             <Button
               className="w-full sm:w-auto sm:min-w-[140px] h-11 sm:h-12 text-sm sm:text-base font-medium disabled:bg-gray-300 disabled:cursor-not-allowed shadow-sm order-1 sm:order-2 !bg-primary hover:!bg-primary/90 shadow-lg"
-              disabled={!coach || !type || !date || !time}
+              disabled={!coachId || !date || !time || !clientId || creating}
               onClick={handleConfirm}
             >
               Confirm Booking

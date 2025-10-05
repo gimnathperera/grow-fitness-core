@@ -348,4 +348,44 @@ export class SessionsService {
     // TODO: Implement calendar synchronization
     console.log(`Syncing calendar for user ${userId}`);
   }
+
+  // --- Availability (for GET /sessions/check-availability) ---
+  async getAvailabilityByCoach(coachId: string): Promise<{
+    coach_id: string;
+    session_type: string;
+    available_dates: { date: string; time_slots: { id: string; time: string; available: boolean }[] }[];
+  }> {
+    if (!coachId) {
+      throw new BadRequestException({ message: 'coachId is required' });
+    }
+
+    // Generate availability for the next 14 days, 09:00-17:00 hourly slots
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const days = 14;
+    const hours = [9, 10, 11, 12, 13, 14, 15, 16];
+
+    const available_dates = Array.from({ length: days }).map((_, i) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      const dateIso = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).toISOString();
+
+      const time_slots = hours.map((h) => {
+        const hh = `${h}`.padStart(2, '0');
+        return {
+          id: `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}-${hh}:00`,
+          time: `${hh}:00`,
+          available: true,
+        };
+      });
+
+      return { date: dateIso, time_slots };
+    });
+
+    return {
+      coach_id: coachId,
+      session_type: 'personal_training',
+      available_dates,
+    };
+  }
 }

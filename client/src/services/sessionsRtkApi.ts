@@ -1,5 +1,6 @@
 import { baseApi } from '@/services/baseApi';
 import type { ApiSuccessResponse } from '@/types/api';
+import type { AvailabilityData } from '@/types/session-booking';
 
 export interface SessionsListResponse {
   sessions: any[];
@@ -62,6 +63,14 @@ export const sessionsRtkApi = baseApi.injectEndpoints({
       }),
       providesTags: ['Session'],
     }),
+    getAvailabilityByCoach: builder.query<ApiSuccessResponse<AvailabilityData>, { coachId: string }>({
+      query: ({ coachId }) => ({
+        url: '/sessions/check-availability',
+        method: 'GET',
+        params: { coachId },
+      }),
+      providesTags: ['Session'],
+    }),
     createSession: builder.mutation<ApiSuccessResponse<any>, CreateSessionPayload>({
       query: (payload) => ({
         url: '/sessions',
@@ -74,4 +83,4 @@ export const sessionsRtkApi = baseApi.injectEndpoints({
   overrideExisting: false,
 });
 
-export const { useGetSessionsQuery, useLazyGetSessionsQuery, useGetUpcomingSessionsQuery, useLazyGetUpcomingSessionsQuery, useGetUpcomingByKidQuery, useLazyGetUpcomingByKidQuery, useCreateSessionMutation } = sessionsRtkApi;
+export const { useGetSessionsQuery, useLazyGetSessionsQuery, useGetUpcomingSessionsQuery, useLazyGetUpcomingSessionsQuery, useGetUpcomingByKidQuery, useLazyGetUpcomingByKidQuery, useCreateSessionMutation, useGetAvailabilityByCoachQuery, useLazyGetAvailabilityByCoachQuery } = sessionsRtkApi;
