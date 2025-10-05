@@ -12,9 +12,9 @@ const badges = [
 
 export function BadgeMap() {
   return (
-    <Card className="w-full max-w-5xl mx-auto bg-gradient-to-br from-green-900 to-emerald-800 text-white shadow-2xl border-0 p-6">
+    <Card className="w-full max-w-5xl mx-auto bg-white text-[#243E36] shadow-sm border border-[#23B685]/20 p-6">
       <CardHeader>
-        <CardTitle className="text-center text-2xl font-bold text-yellow-300">
+        <CardTitle className="text-center text-2xl font-bold text-[#243E36]">
           🗺️ Badge Journey
         </CardTitle>
       </CardHeader>
@@ -36,8 +36,8 @@ export function BadgeMap() {
             />
             <defs>
               <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#34d399" /> {/* Emerald green */}
-                <stop offset="100%" stopColor="#facc15" /> {/* Yellow */}
+                <stop offset="0%" stopColor="#23B685" />
+                <stop offset="100%" stopColor="#23B685" />
               </linearGradient>
             </defs>
           </svg>
@@ -51,10 +51,10 @@ export function BadgeMap() {
               }`}
             >
               <div
-                className={`w-24 h-24 rounded-full flex items-center justify-center shadow-lg border-4 ${
+                className={`w-24 h-24 rounded-full flex items-center justify-center shadow-md border-4 ${
                   badge.earned
-                    ? "border-yellow-300 bg-gradient-to-tr from-green-500 to-emerald-600"
-                    : "border-gray-500 bg-gray-700"
+                    ? "border-[#23B685] bg-[#23B685]/10"
+                    : "border-gray-300 bg-gray-100"
                 }`}
               >
                 <img
@@ -63,7 +63,7 @@ export function BadgeMap() {
                   className="w-16 h-16 rounded-full object-cover"
                 />
               </div>
-              <p className="mt-2 text-sm font-medium text-yellow-200">
+              <p className="mt-2 text-sm font-medium text-[#243E36]">
                 {badge.title}
               </p>
             </div>

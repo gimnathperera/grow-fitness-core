@@ -1,178 +1,183 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, Plus } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import SessionDetailsModal from '@/components/session-details-modal';
 import BookSessionModal from './book-session-modal';
-import { useGetSessionsQuery, useCreateSessionMutation, useGetUpcomingByKidQuery } from '@/services/sessionsRtkApi';
+import { useGetSessionsQuery, useGetUpcomingByKidQuery } from '@/services/sessionsRtkApi';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store';
 import { useGetKidQuery } from '@/services/kidsApi';
 
-const SessionTile = ({ title, subtitle }: { title: string; subtitle: string }) => (
-  <div className="p-2 bg-[#23B685]/5 rounded-lg text-center">
-    <p className="text-sm font-medium">{title}</p>
-    <p className="text-xs text-gray-600">{subtitle}</p>
-  </div>
-);
+type CalendarEvent = {
+  _id?: string;
+  title: string;
+  date: Date;
+  session?: any;
+};
 
 export default function ScheduleTab() {
   const [selectedSession, setSelectedSession] = useState<any>(null);
   const [openBooking, setOpenBooking] = useState(false);
-
-  // Month filter input (yyyy-mm)
-  const [month, setMonth] = useState<string>(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   const selectedKidId = useSelector((state: RootState) => state.auth.selectedKidId);
   const { data: kidResp } = useGetKidQuery(selectedKidId as string, { skip: !selectedKidId });
   const coachId: string | undefined =
     (kidResp?.data as any)?.coach?.id || (kidResp?.data as any)?.coachId;
 
-  // Compute month range (start → end of selected month)
+  // month start/end
   const [dateFrom, dateTo] = useMemo(() => {
-    if (!month) return [undefined, undefined] as const;
-    const [yStr, mStr] = month.split('-');
-    const y = Number(yStr);
-    const m = Number(mStr) - 1;
+    const y = currentDate.getFullYear();
+    const m = currentDate.getMonth();
     const start = new Date(y, m, 1, 0, 0, 0, 0);
     const end = new Date(y, m + 1, 0, 23, 59, 59, 999);
     return [start.toISOString(), end.toISOString()] as const;
-  }, [month]);
+  }, [currentDate]);
 
-  // Fetch monthly sessions (kept for future use in case we add monthly view again)
-  const sessionsParams = coachId && dateFrom && dateTo ? { coachId, dateFrom, dateTo, page: 1, limit: 50 } : undefined;
-  const { data: sessionsResp } = useGetSessionsQuery(sessionsParams as any);
-  const [createSession] = useCreateSessionMutation();
+  // fetch sessions (prefer kidId; fallback to coachId)
+  const sessionsParams =
+    dateFrom && dateTo
+      ? {
+          ...(selectedKidId ? { kidId: selectedKidId as string } : coachId ? { coachId } : {}),
+          dateFrom,
+          dateTo,
+          page: 1,
+          limit: 50,
+        }
+      : undefined;
+  const { data: sessionsResp } = useGetSessionsQuery(sessionsParams, { skip: !sessionsParams });
+  const sessions = sessionsResp?.data?.sessions ?? [];
 
-  // Upcoming sessions for selected kid (updates on kid dropdown change)
-  const { data: upcomingKidResp, isFetching: loadingUpcoming } = useGetUpcomingByKidQuery(
+  useGetUpcomingByKidQuery(
     { kidId: selectedKidId as string, limit: 6 },
     { skip: !selectedKidId }
   );
-  const upcomingSessions = (upcomingKidResp?.data as any[]) || [];
 
-  // Debug logs for upcoming-by-kid
-  useEffect(() => {
-    console.log('[ScheduleTab][UpcomingByKid] selectedKidId:', selectedKidId);
-    if (!selectedKidId) {
-      console.warn('[ScheduleTab][UpcomingByKid] No kid selected; skipping fetch');
-    } else {
-      console.log('[ScheduleTab][UpcomingByKid] requesting:', {
-        endpoint: '/sessions/upcoming-by-kid',
-        params: { kidId: selectedKidId, limit: 6 },
-      });
-    }
-  }, [selectedKidId]);
+  const events: CalendarEvent[] = sessions.map((s: any) => ({
+    _id: s?._id,
+    title: s?.sessionType || s?.name || 'Session',
+    date: new Date(s?.startsAt),
+    session: s,
+  }));
 
-  useEffect(() => {
-    if (!loadingUpcoming) {
-      console.log('[ScheduleTab][UpcomingByKid] response:', upcomingKidResp);
-      console.log('[ScheduleTab][UpcomingByKid] list length:', upcomingSessions.length);
-    } else {
-      console.log('[ScheduleTab][UpcomingByKid] loading...');
-    }
-  }, [loadingUpcoming, upcomingKidResp, upcomingSessions.length]);
-
-  const toTitle = (s: any) => s?.sessionType || s?.name || 'Session';
-  const toSubtitle = (s: any) => {
-    const starts = s?.startsAt ? new Date(s.startsAt) : null;
-    const ends = s?.endsAt ? new Date(s.endsAt) : null;
-    if (starts && ends) {
-      return `${starts.toLocaleDateString()} ${starts.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      })} - ${ends.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-    }
-    if (starts) {
-      return `${starts.toLocaleDateString()} ${starts.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      })}`;
-    }
-    return '';
+  const handlePrevMonth = () => {
+    setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
   };
 
-  const handleBookingConfirm = (data: {
-    coach: string;
-    type: string;
-    date: Date | undefined;
-    time: string;
-  }) => {
-    console.log('Booking confirmed:', { session: selectedSession, ...data });
-    // TODO: send booking request to backend
+  const handleNextMonth = () => {
+    setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
   };
+
+  const handleToday = () => {
+    setCurrentDate(new Date());
+  };
+
+  const handleBookingConfirm = (data: any) => {
+    console.log('Booking confirmed:', data);
+  };
+
+  // Generate grid for the month
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  const firstDayOfMonth = new Date(year, month, 1);
+  const firstDayOfWeek = firstDayOfMonth.getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const calendarDays = [];
+  for (let i = 0; i < firstDayOfWeek; i++) calendarDays.push(null);
+  for (let i = 1; i <= daysInMonth; i++) calendarDays.push(new Date(year, month, i));
+
+  const monthLabel = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
 
   return (
     <>
-      <Card className="border-[#23B685]/20">
-        <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <CardTitle className="text-[#243E36] flex items-center">
-            <Calendar className="mr-2 h-5 w-5" />
-            Upcoming Sessions
+      <Card className="border-[#23B685]/20 shadow-sm">
+        <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between">
+          <CardTitle className="flex items-center text-lg font-semibold text-[#243E36]">
+            <CalendarIcon className="mr-2 h-5 w-5 text-[#23B685]" />
+            {monthLabel}
           </CardTitle>
-
-          {/* Month filter */}
-          <input
-            type="month"
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            className="border rounded-md p-2 text-sm"
-          />
-
-          <Button
-            size="sm"
-            className="!bg-primary hover:!bg-primary/90 text-white"
-            onClick={() => setOpenBooking(true)}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Extra Session
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={handlePrevMonth} className="text-[#243E36] hover:bg-[#23B685]/10">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleToday} className="text-[#243E36] hover:bg-[#23B685]/10">
+              Today
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleNextMonth} className="text-[#243E36] hover:bg-[#23B685]/10">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
+              className="!bg-primary hover:!bg-primary/90 text-white ml-2 rounded-full px-4 shadow-lg ring-0 hover:ring-2 hover:ring-[#23B685]/40 transition-transform duration-200 ease-out hover:scale-105"
+              onClick={() => setOpenBooking(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Extra Session
+            </Button>
+          </div>
         </CardHeader>
 
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {loadingUpcoming && (
-              <p className="text-sm text-gray-500">Loading...</p>
-            )}
-            {!loadingUpcoming && upcomingSessions.length === 0 && (
-              <p className="text-sm text-gray-500">No upcoming sessions for the selected kid</p>
-            )}
-            {!loadingUpcoming &&
-              upcomingSessions.map((s: any, idx: number) => (
-                <SessionTile key={s?._id || idx} title={toTitle(s)} subtitle={toSubtitle(s)} />
-              ))}
+          <div className="grid grid-cols-7 gap-[1px] bg-[#23B685]/10 rounded-lg overflow-hidden text-center text-xs sm:text-sm">
+            {/* Weekday headers */}
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+              <div key={d} className="p-2 font-medium bg-[#23B685]/5 text-[#243E36]">
+                {d}
+              </div>
+            ))}
+
+            {/* Days */}
+            {calendarDays.map((day, idx) => {
+              const dayEvents = events.filter(
+                (e) =>
+                  day &&
+                  e.date.getFullYear() === day.getFullYear() &&
+                  e.date.getMonth() === day.getMonth() &&
+                  e.date.getDate() === day.getDate()
+              );
+
+              const isToday =
+                day &&
+                new Date().getDate() === day.getDate() &&
+                new Date().getMonth() === day.getMonth() &&
+                new Date().getFullYear() === day.getFullYear();
+
+              return (
+                <div
+                  key={idx}
+                  className={`min-h-[90px] sm:min-h-[110px] p-2 flex flex-col items-start justify-start ${
+                    day ? 'bg-white cursor-pointer hover:bg-[#23B685]/5' : 'bg-gray-50'
+                  } ${isToday ? 'border border-[#23B685]' : ''}`}
+                >
+                  <div className="text-gray-600 text-xs mb-1">{day ? day.getDate() : ''}</div>
+                  {dayEvents.map((event) => (
+                    <div
+                      key={event._id}
+                      onClick={() => setSelectedSession(event.session)}
+                      className="w-full bg-[#23B685]/15 hover:bg-[#23B685]/25 text-[#23B685] text-xs p-1 rounded-md truncate"
+                    >
+                      {event.title}
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
 
-      {/* Session Details Modal */}
+      {/* Event details modal */}
       <SessionDetailsModal
         session={selectedSession}
         open={!!selectedSession}
         onClose={() => setSelectedSession(null)}
       />
 
-      {/* Floating booking button */}
-      {selectedSession && (
-        <div className="fixed bottom-6 right-6 flex justify-end">
-          <Button
-            className="!bg-primary hover:!bg-primary/90 shadow-lg"
-            onClick={() => {
-              setOpenBooking(true);
-              setSelectedSession(null);
-            }}
-          >
-            Book Session
-          </Button>
-        </div>
-      )}
-
-      {/* Booking Modal */}
+      {/* Booking modal */}
       <BookSessionModal
         open={openBooking}
         onClose={() => setOpenBooking(false)}
