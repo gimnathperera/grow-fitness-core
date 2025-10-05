@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Star, Heart, Trophy } from 'lucide-react';
 import { BadgeMap } from './tressure-map';
+import { MilestoneProgress } from './milestone-progress';
 
 export function AchievementsTab() {
   return (
@@ -14,6 +15,7 @@ export function AchievementsTab() {
         </CardHeader>
         <CardContent>
           <BadgeMap/>
+          <MilestoneProgress/>
         </CardContent>
       </Card>
     </div>
