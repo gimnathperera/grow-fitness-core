@@ -4,6 +4,8 @@ import { User } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store';
 import { useGetKidQuery } from '@/services/kidsApi';
+import { useEffect } from 'react';
+import { useGetUpcomingByKidQuery } from '@/services/sessionsRtkApi';
 
 interface OverviewTabProps {
   childData: {
@@ -16,10 +18,37 @@ interface OverviewTabProps {
 export function OverviewTab({ childData }: OverviewTabProps) {
   const selectedKidId = useSelector((state: RootState) => state.auth.selectedKidId);
   const { data: kidResp, isFetching: isKidLoading } = useGetKidQuery(selectedKidId as string, { skip: !selectedKidId });
+  const { data: upcomingKidResp, isFetching: loadingUpcoming } = useGetUpcomingByKidQuery(
+    { kidId: selectedKidId as string, limit: 6 },
+    { skip: !selectedKidId }
+  );
 
   const displayName = kidResp?.data?.name ?? childData?.name;
   const displayAge = kidResp?.data?.age ?? childData?.age;
   const displayCoach = (kidResp?.data as any)?.coach?.name ?? childData?.coach;
+
+  // Debug logs for selected kid and upcoming sessions
+  useEffect(() => {
+    console.log('[OverviewTab][UpcomingByKid] selectedKidId:', selectedKidId);
+    if (!selectedKidId) {
+      console.warn('[OverviewTab][UpcomingByKid] No kid selected; skipping fetch');
+    } else {
+      console.log('[OverviewTab][UpcomingByKid] requesting:', {
+        endpoint: '/sessions/upcoming-by-kid',
+        params: { kidId: selectedKidId, limit: 6 },
+      });
+    }
+  }, [selectedKidId]);
+
+  useEffect(() => {
+    if (!loadingUpcoming) {
+      console.log('[OverviewTab][UpcomingByKid] response:', upcomingKidResp);
+      const list = (upcomingKidResp?.data as any[]) || [];
+      console.log('[OverviewTab][UpcomingByKid] list length:', list.length);
+    } else {
+      console.log('[OverviewTab][UpcomingByKid] loading...');
+    }
+  }, [loadingUpcoming, upcomingKidResp]);
 
   return (
     <div className="space-y-6">

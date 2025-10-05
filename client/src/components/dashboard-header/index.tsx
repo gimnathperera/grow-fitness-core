@@ -142,41 +142,44 @@ export function DashboardHeader() {
         </div>
 
         {/* Right side: kid selection (only for parents) */}
-        {user.role === "client" && (
-          <div>
-            {kidsForUi && kidsForUi.length > 0 ? (
-              kidsForUi.length === 1 ? (
-                <span className="px-3 py-1 rounded-md bg-gray-100 text-sm font-medium text-gray-700 shadow-sm">
-                  {kidsForUi[0].name}
-                </span>
-              ) : (
-                <Select
-                  value={selectedKid}
-                  onValueChange={(val) => {
-                    setSelectedKid(val);
-                    dispatch(setSelectedKidId(val));
-                    console.log("Kid selected:", val);
-                  }}
-                >
-                  <SelectTrigger className="w-[160px] text-sm">
-                    <SelectValue placeholder="Select Kid" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {kidsForUi.map((kid) => (
-                      <SelectItem key={kid.id} value={String(kid.id)}>
-                        {kid.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )
-            ) : (
-              <span className="px-3 py-1 rounded-md bg-gray-50 text-sm font-medium text-gray-400 italic">
-                Kid Name
-              </span>
-            )}
-          </div>
-        )}
+{/* Right side: kid selection (only for parents/clients) */}
+{user.role === "client" && (
+  <div className="flex items-center gap-2">
+    <h4 className="text-sm font-bold text-gray-700">Kid's Name:</h4>
+    {kidsForUi && kidsForUi.length > 0 ? (
+      kidsForUi.length === 1 ? (
+        <span className="px-3 py-1 rounded-md bg-gray-100 text-sm font-medium text-gray-700 shadow-sm">
+          {kidsForUi[0].name}
+        </span>
+      ) : (
+        <Select
+          value={selectedKid}
+          onValueChange={(val) => {
+            setSelectedKid(val);
+            dispatch(setSelectedKidId(val));
+            console.log("Kid selected:", val);
+          }}
+        >
+          <SelectTrigger className="w-[160px] text-sm">
+            <SelectValue placeholder="Select Kid" />
+          </SelectTrigger>
+          <SelectContent>
+            {kidsForUi.map((kid) => (
+              <SelectItem key={kid.id} value={String(kid.id)}>
+                {kid.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )
+    ) : (
+      <span className="px-3 py-1 rounded-md bg-gray-50 text-sm font-medium text-gray-400 italic">
+        Kid Name
+      </span>
+    )}
+  </div>
+)}
+
       </div>
     </div>
   );

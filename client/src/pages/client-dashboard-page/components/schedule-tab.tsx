@@ -6,12 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Calendar, Plus } from 'lucide-react';
 import SessionDetailsModal from '@/components/session-details-modal';
 import BookSessionModal from './book-session-modal';
-import { useGetSessionsQuery, useCreateSessionMutation } from '@/services/sessionsRtkApi';
+import { useGetSessionsQuery, useCreateSessionMutation, useGetUpcomingByKidQuery } from '@/services/sessionsRtkApi';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store';
 import { useGetKidQuery } from '@/services/kidsApi';
-
-const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const SessionTile = ({ title, subtitle }: { title: string; subtitle: string }) => (
   <div className="p-2 bg-[#23B685]/5 rounded-lg text-center">
@@ -46,41 +44,39 @@ export default function ScheduleTab() {
     return [start.toISOString(), end.toISOString()] as const;
   }, [month]);
 
-  // Fetch sessions filtered by month & coach
-  const sessionsParams =
-    coachId && dateFrom && dateTo ? { coachId, dateFrom, dateTo, page: 1, limit: 50 } : undefined;
-
-  const { data: sessionsResp, isFetching: loadingSessions } = useGetSessionsQuery(
-    sessionsParams as any
-  );
-
+  // Fetch monthly sessions (kept for future use in case we add monthly view again)
+  const sessionsParams = coachId && dateFrom && dateTo ? { coachId, dateFrom, dateTo, page: 1, limit: 50 } : undefined;
+  const { data: sessionsResp } = useGetSessionsQuery(sessionsParams as any);
   const [createSession] = useCreateSessionMutation();
-  const sessions = (sessionsResp?.data as any)?.sessions || [];
 
-  // Group by weekdays (Mon–Sat only)
-  const groupedByDay: Record<string, any[]> = useMemo(() => {
-    const groups: Record<string, any[]> = {};
-    for (const day of daysOfWeek) groups[day] = [];
+  // Upcoming sessions for selected kid (updates on kid dropdown change)
+  const { data: upcomingKidResp, isFetching: loadingUpcoming } = useGetUpcomingByKidQuery(
+    { kidId: selectedKidId as string, limit: 6 },
+    { skip: !selectedKidId }
+  );
+  const upcomingSessions = (upcomingKidResp?.data as any[]) || [];
 
-    sessions.forEach((s: any) => {
-      if (s?.startsAt) {
-        const d = new Date(s.startsAt);
-        const weekdayIndex = d.getDay(); // Sunday=0, Monday=1, ... Saturday=6
-        if (weekdayIndex >= 1 && weekdayIndex <= 6) {
-          const dayName = daysOfWeek[weekdayIndex - 1];
-          groups[dayName].push(s);
-        }
-      }
-    });
-
-    // Sort by start time within each day
-    for (const day of daysOfWeek) {
-      groups[day].sort(
-        (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()
-      );
+  // Debug logs for upcoming-by-kid
+  useEffect(() => {
+    console.log('[ScheduleTab][UpcomingByKid] selectedKidId:', selectedKidId);
+    if (!selectedKidId) {
+      console.warn('[ScheduleTab][UpcomingByKid] No kid selected; skipping fetch');
+    } else {
+      console.log('[ScheduleTab][UpcomingByKid] requesting:', {
+        endpoint: '/sessions/upcoming-by-kid',
+        params: { kidId: selectedKidId, limit: 6 },
+      });
     }
-    return groups;
-  }, [sessions]);
+  }, [selectedKidId]);
+
+  useEffect(() => {
+    if (!loadingUpcoming) {
+      console.log('[ScheduleTab][UpcomingByKid] response:', upcomingKidResp);
+      console.log('[ScheduleTab][UpcomingByKid] list length:', upcomingSessions.length);
+    } else {
+      console.log('[ScheduleTab][UpcomingByKid] loading...');
+    }
+  }, [loadingUpcoming, upcomingKidResp, upcomingSessions.length]);
 
   const toTitle = (s: any) => s?.sessionType || s?.name || 'Session';
   const toSubtitle = (s: any) => {
@@ -139,26 +135,17 @@ export default function ScheduleTab() {
         </CardHeader>
 
         <CardContent>
-          {/* Horizontal week layout */}
-          <div className="grid grid-cols-6 gap-4">
-            {daysOfWeek.map((day) => (
-              <div key={day} className="flex flex-col items-center">
-                <h3 className="text-sm font-semibold mb-2">{day}</h3>
-                {groupedByDay[day]?.length === 0 ? (
-                  <p className="text-xs text-gray-500">No sessions</p>
-                ) : (
-                  <div className="flex flex-col gap-2 w-full">
-                    {groupedByDay[day].map((s: any, idx: number) => (
-                      <SessionTile
-                        key={s?._id || idx}
-                        title={toTitle(s)}
-                        subtitle={toSubtitle(s)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {loadingUpcoming && (
+              <p className="text-sm text-gray-500">Loading...</p>
+            )}
+            {!loadingUpcoming && upcomingSessions.length === 0 && (
+              <p className="text-sm text-gray-500">No upcoming sessions for the selected kid</p>
+            )}
+            {!loadingUpcoming &&
+              upcomingSessions.map((s: any, idx: number) => (
+                <SessionTile key={s?._id || idx} title={toTitle(s)} subtitle={toSubtitle(s)} />
+              ))}
           </div>
         </CardContent>
       </Card>

@@ -266,6 +266,20 @@ export class SessionsService {
       .limit(limit);
   }
 
+  async getUpcomingByKid(kidId: string, limit = 10): Promise<SessionDocument[]> {
+    return this.sessionModel
+      .find({
+        kidId,
+        startsAt: { $gte: new Date() },
+        status: SessionStatus.SCHEDULED,
+      })
+      .populate("clientId", "userId")
+      .populate("coachId", "userId")
+      .populate("kidId", "name")
+      .sort({ startsAt: 1 })
+      .limit(limit);
+  }
+
   async getSessionStats(
     coachId: string,
     period: "week" | "month" | "year" = "month"

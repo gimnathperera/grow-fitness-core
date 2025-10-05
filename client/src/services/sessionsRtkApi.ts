@@ -54,6 +54,14 @@ export const sessionsRtkApi = baseApi.injectEndpoints({
       }),
       providesTags: ['Session'],
     }),
+    getUpcomingByKid: builder.query<ApiSuccessResponse<any[]>, { kidId: string; limit?: number }>({
+      query: ({ kidId, limit }) => ({
+        url: '/sessions/upcoming-by-kid',
+        method: 'GET',
+        params: { kidId, ...(limit ? { limit } : {}) },
+      }),
+      providesTags: ['Session'],
+    }),
     createSession: builder.mutation<ApiSuccessResponse<any>, CreateSessionPayload>({
       query: (payload) => ({
         url: '/sessions',
@@ -66,4 +74,4 @@ export const sessionsRtkApi = baseApi.injectEndpoints({
   overrideExisting: false,
 });
 
-export const { useGetSessionsQuery, useLazyGetSessionsQuery, useGetUpcomingSessionsQuery, useLazyGetUpcomingSessionsQuery, useCreateSessionMutation } = sessionsRtkApi;
+export const { useGetSessionsQuery, useLazyGetSessionsQuery, useGetUpcomingSessionsQuery, useLazyGetUpcomingSessionsQuery, useGetUpcomingByKidQuery, useLazyGetUpcomingByKidQuery, useCreateSessionMutation } = sessionsRtkApi;

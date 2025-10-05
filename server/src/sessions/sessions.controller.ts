@@ -59,6 +59,27 @@ export class SessionsController {
     };
   }
 
+  @Get("upcoming-by-kid")
+  @Roles(UserRole.ADMIN, UserRole.TEAM, UserRole.COACH, UserRole.CLIENT)
+  @ApiOperation({ summary: "Get upcoming sessions by kidId" })
+  @ApiResponse({ status: 200, description: "Upcoming sessions by kid retrieved successfully" })
+  @ApiQuery({ name: "kidId", required: true })
+  @ApiQuery({ name: "limit", required: false, type: Number })
+  async getUpcomingByKid(
+    @Query("kidId") kidId: string,
+    @Query("limit") limit?: number
+  ): Promise<SuccessResponseDto<any[]>> {
+    const sessions = await this.sessionsService.getUpcomingByKid(kidId, limit || 10);
+    return {
+      ok: true,
+      data: sessions,
+      meta: {
+        traceId: "get-upcoming-by-kid",
+        timestamp: new Date().toISOString(),
+      },
+    };
+  }
+
   @Get()
   @Roles(UserRole.ADMIN, UserRole.TEAM, UserRole.COACH, UserRole.CLIENT)
   @ApiOperation({ summary: "Get all sessions" })
