@@ -221,15 +221,34 @@ export class SessionsService {
   async checkAvailability(
     coachId: string,
     startsAt: string,
-    endsAt: string
+    endsAt: string,
+    location?: string
   ): Promise<boolean> {
+    // Validate location/time window rules
+    const loc = (location || '').toLowerCase();
+    const startDate = new Date(startsAt);
+    const endDate = new Date(endsAt);
+    const startH = startDate.getHours();
+
+    // Allowed windows by location (inclusive start, exclusive end)
+    // Kirulapana: 08:00-12:00 and 14:00-18:00
+    // Kollupitiya: 10:00-16:00
+    const withinKirulapana = (startH >= 8 && startH < 12) || (startH >= 14 && startH < 18);
+    const withinKollupitiya = startH >= 10 && startH < 16;
+
+    if (loc) {
+      if (loc === 'kirulapana' && !withinKirulapana) return false;
+      if (loc === 'kollupitiya' && !withinKollupitiya) return false;
+      if (loc !== 'kirulapana' && loc !== 'kollupitiya') return false;
+    }
+
     const overlappingSession = await this.sessionModel.findOne({
       coachId,
       status: { $in: [SessionStatus.SCHEDULED, SessionStatus.IN_PROGRESS] },
       $or: [
         {
-          startsAt: { $lt: new Date(endsAt) },
-          endsAt: { $gt: new Date(startsAt) },
+          startsAt: { $lt: endDate },
+          endsAt: { $gt: startDate },
         },
       ],
     });
@@ -350,7 +369,7 @@ export class SessionsService {
   }
 
   // --- Availability (for GET /sessions/check-availability) ---
-  async getAvailabilityByCoach(coachId: string): Promise<{
+  async getAvailabilityByCoach(coachId: string, location?: string): Promise<{
     coach_id: string;
     session_type: string;
     available_dates: { date: string; time_slots: { id: string; time: string; available: boolean }[] }[];
@@ -359,23 +378,56 @@ export class SessionsService {
       throw new BadRequestException({ message: 'coachId is required' });
     }
 
-    // Generate availability for the next 14 days, 09:00-17:00 hourly slots
+    // Generate availability for the next 14 days
+    // Location-based windows:
+    // - Kirulapana: 08:00-12:00 and 14:00-18:00
+    // - Kollupitiya: 10:00-16:00
+    // - Default (unknown): no availability
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const days = 14;
-    const hours = [9, 10, 11, 12, 13, 14, 15, 16];
+    const loc = (location || '').toLowerCase();
+    const buildHours = (d: Date) => {
+      if (loc === 'kirulapana') return [8, 9, 10, 11, 14, 15, 16, 17];
+      if (loc === 'kollupitiya') return [10, 11, 12, 13, 14, 15];
+      return [] as number[];
+    };
+
+    // Preload coach sessions within the window to filter out occupied slots
+    const windowStart = new Date(today);
+    const windowEnd = new Date(today);
+    windowEnd.setDate(windowEnd.getDate() + days);
+
+    const busySessions = await this.sessionModel.find({
+      coachId,
+      status: { $in: [SessionStatus.SCHEDULED, SessionStatus.IN_PROGRESS] },
+      $or: [
+        {
+          startsAt: { $lt: windowEnd },
+          endsAt: { $gt: windowStart },
+        },
+      ],
+    });
+
+    const overlaps = (slotStart: Date, slotEnd: Date) =>
+      busySessions.some((s) => s.startsAt < slotEnd && s.endsAt > slotStart);
 
     const available_dates = Array.from({ length: days }).map((_, i) => {
       const d = new Date(today);
       d.setDate(today.getDate() + i);
       const dateIso = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).toISOString();
 
-      const time_slots = hours.map((h) => {
+      const hoursForDay = buildHours(d);
+      const time_slots = hoursForDay.map((h) => {
         const hh = `${h}`.padStart(2, '0');
+        const slotStart = new Date(d);
+        slotStart.setHours(h, 0, 0, 0);
+        const slotEnd = new Date(slotStart.getTime() + 60 * 60 * 1000);
+        const available = !overlaps(slotStart, slotEnd);
         return {
           id: `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}-${hh}:00`,
           time: `${hh}:00`,
-          available: true,
+          available,
         };
       });
 

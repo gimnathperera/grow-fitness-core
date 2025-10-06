@@ -179,10 +179,12 @@ export class SessionsController {
   @ApiOperation({ summary: "Get coach availability (generated slots)" })
   @ApiResponse({ status: 200, description: "Coach availability retrieved successfully" })
   @ApiQuery({ name: "coachId", required: true })
+  @ApiQuery({ name: "location", required: false })
   async getAvailabilityByCoach(
-    @Query("coachId") coachId: string
+    @Query("coachId") coachId: string,
+    @Query("location") location?: string
   ): Promise<SuccessResponseDto<any>> {
-    const data = await this.sessionsService.getAvailabilityByCoach(coachId);
+    const data = await this.sessionsService.getAvailabilityByCoach(coachId, location);
     return {
       ok: true,
       data,
@@ -247,7 +249,8 @@ export class SessionsController {
     const available = await this.sessionsService.checkAvailability(
       checkAvailabilityDto.coachId,
       checkAvailabilityDto.startsAt,
-      checkAvailabilityDto.endsAt
+      checkAvailabilityDto.endsAt,
+      checkAvailabilityDto.location
     );
 
     return {

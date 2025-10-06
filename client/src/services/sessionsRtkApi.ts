@@ -63,11 +63,11 @@ export const sessionsRtkApi = baseApi.injectEndpoints({
       }),
       providesTags: ['Session'],
     }),
-    getAvailabilityByCoach: builder.query<ApiSuccessResponse<AvailabilityData>, { coachId: string }>({
-      query: ({ coachId }) => ({
+    getAvailabilityByCoach: builder.query<ApiSuccessResponse<AvailabilityData>, { coachId: string; location?: string }>({
+      query: ({ coachId, location }) => ({
         url: '/sessions/check-availability',
         method: 'GET',
-        params: { coachId },
+        params: { coachId, ...(location ? { location } : {}) },
       }),
       providesTags: ['Session'],
     }),

@@ -139,4 +139,9 @@ export class CheckAvailabilityDto {
   @ApiProperty()
   @IsDateString()
   endsAt: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  location?: string;
 }
