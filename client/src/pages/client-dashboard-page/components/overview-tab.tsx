@@ -6,6 +6,8 @@ import type { RootState } from '@/store';
 import { useGetKidQuery } from '@/services/kidsApi';
 import { useEffect } from 'react';
 import { useGetUpcomingByKidQuery } from '@/services/sessionsRtkApi';
+import { StatsGrid } from '@/components/stat-grid';
+import type { User as UserType, DashboardStats } from '@/types/dashboard';
 
 interface OverviewTabProps {
   childData: {
@@ -14,6 +16,16 @@ interface OverviewTabProps {
     coach: string;
   };
 }
+
+const stats: DashboardStats = {
+  totalChildren: 1,
+  todaySessions: 1,
+  upcomingSessions: 2,
+  weeklyProgress: 75,
+  avgProgress: 75,
+};
+
+const user: UserType = { name: 'Emma Johnson', role: 'parent' };
 
 export function OverviewTab({ childData }: OverviewTabProps) {
   const selectedKidId = useSelector((state: RootState) => state.auth.selectedKidId);
@@ -142,6 +154,7 @@ export function OverviewTab({ childData }: OverviewTabProps) {
           </CardContent>
         </Card>
       </div>
+       <StatsGrid stats={stats} user={user} />
     </div>
   );
 }

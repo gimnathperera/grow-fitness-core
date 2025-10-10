@@ -120,21 +120,40 @@ const Navbar: React.FC = () => {
     navigate('/profile');
   }, [closeMenu, navigate]);
 
+  const handleDashboardSelect = useCallback(() => {
+    closeMenu();
+    navigate(destination);
+  }, [closeMenu, destination, navigate]);
+
   const handleLogout = useCallback(async () => {
     await auth.logout();
     closeMenu();
     navigate('/sign-in');
   }, [auth, closeMenu, navigate]);
 
+  const dashboardLabel = useMemo(() => {
+    const role = auth.user?.role;
+    if (role === 'coach') return 'Coach Dashboard';
+    if (role === 'client') return 'Client Dashboard';
+    if (role === 'team') return 'Team Dashboard';
+    if (role === 'admin') return 'Admin Dashboard';
+    return 'Dashboard';
+  }, [auth.user?.role]);
+
   const primaryMenuItems = useMemo(
     () => [
+      {
+        key: 'dashboard',
+        label: dashboardLabel,
+        onSelect: handleDashboardSelect,
+      },
       {
         key: 'profile',
         label: 'Profile',
         onSelect: handleProfileSelect,
       },
     ],
-    [handleProfileSelect]
+    [dashboardLabel, handleDashboardSelect, handleProfileSelect]
   );
 
   const allMenuItems = useMemo(

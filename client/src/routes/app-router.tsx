@@ -13,6 +13,7 @@ import ClientDashboardPage from '@/pages/client-dashboard-page/page';
 import ForgotPasswordPage from '@/pages/forgot-password';
 import CoachBadges from '@/pages/coach-dashboard/components/kids-progress';
 import CollectInfoPage from '@/pages/collect-info-page';
+import ProfileIndex from '@/pages/profile';
 
 const AppRouter: React.FC = () => {
   return (
@@ -62,12 +63,19 @@ const AppRouter: React.FC = () => {
           />
           <Route path="add-kids-details" element={<AddKidsDetailsPage />} />
           <Route path="client-dashboard" element={<ClientDashboardPage />} />
-          <Route path="sign-in" element={<LoginPage />} />
           <Route path="coach-dashboard" element={<CoachPage />} />
           <Route path="sign-up" element={<SignUpPage />} />
           <Route path="collect-info" element={<CollectInfoPage />} />
           <Route path="forgot-password" element={<ForgotPasswordPage />} />
           <Route path="kids-progress" element={<CoachBadges />} />
+          <Route
+            path="profile"
+            element={
+              <RequireAuth requiredRoles={["client", "coach", "team", "admin"]}>
+                <ProfileIndex />
+              </RequireAuth>
+            }
+          />
         </Route>
       </Routes>
     </Router>

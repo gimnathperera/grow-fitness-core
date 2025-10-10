@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { DashboardHeader } from '@/components/dashboard-header';
-import { StatsGrid } from '@/components/stat-grid';
 import { DesktopTabs } from '@/components/dashboard-tabs/index.tsx';
 import { MobileTabNav } from '@/components/footer-tab-navbar';
 import {
@@ -13,7 +12,7 @@ import {
   AchievementsTab,
   MessagesTab,
 } from './components';
-import type { User as UserType, DashboardStats } from '@/types/dashboard';
+import type { User as UserType } from '@/types/dashboard';
 import type { ChildData } from './types';
 
 const user: UserType = { name: 'Emma Johnson', role: 'parent' };
@@ -25,14 +24,6 @@ const childData: ChildData = {
   totalSessions: 24,
   achievements: 5,
   progress: 75,
-};
-
-const stats: DashboardStats = {
-  totalChildren: 1,
-  todaySessions: 1,
-  upcomingSessions: 2,
-  weeklyProgress: 75,
-  avgProgress: 75,
 };
 
 const tabsConfig = [
@@ -64,7 +55,7 @@ export default function ClientDashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <DashboardHeader user={user} />
-      <StatsGrid stats={stats} user={user} />
+     
 
       <DesktopTabs activeTab={activeTab} onTabChange={setActiveTab} user={user}>
         <Tabs value={activeTab}>

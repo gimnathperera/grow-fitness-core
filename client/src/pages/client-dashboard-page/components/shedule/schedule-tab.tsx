@@ -95,31 +95,54 @@ export default function ScheduleTab() {
   return (
     <>
       <Card className="border-[#23B685]/20 shadow-sm">
-        <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between">
-          <CardTitle className="flex items-center text-lg font-semibold text-[#243E36]">
-            <CalendarIcon className="mr-2 h-5 w-5 text-[#23B685]" />
-            {monthLabel}
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={handlePrevMonth} className="text-[#243E36] hover:bg-[#23B685]/10">
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleToday} className="text-[#243E36] hover:bg-[#23B685]/10">
-              Today
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleNextMonth} className="text-[#243E36] hover:bg-[#23B685]/10">
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              size="sm"
-              className="!bg-primary hover:!bg-primary/90 text-white ml-2 rounded-full px-4 shadow-lg ring-0 hover:ring-2 hover:ring-[#23B685]/40 transition-transform duration-200 ease-out hover:scale-105"
-              onClick={() => setOpenBooking(true)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Book Extra Session
-            </Button>
-          </div>
-        </CardHeader>
+      <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        {/* Month Label */}
+        <CardTitle className="flex items-center justify-center md:justify-start text-base md:text-lg font-semibold text-[#243E36]">
+          <CalendarIcon className="mr-2 h-5 w-5 text-[#23B685]" />
+          {monthLabel}
+        </CardTitle>
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap justify-center md:justify-end items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handlePrevMonth}
+            className="text-[#243E36] hover:bg-[#23B685]/10"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleToday}
+            className="text-[#243E36] hover:bg-[#23B685]/10"
+          >
+            Today
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleNextMonth}
+            className="text-[#243E36] hover:bg-[#23B685]/10"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+
+          <Button
+            size="sm"
+            className="!bg-primary hover:!bg-primary/90 text-white rounded-full px-4 shadow-lg ring-0 hover:ring-2 hover:ring-[#23B685]/40 transition-transform duration-200 ease-out hover:scale-105"
+            onClick={() => setOpenBooking(true)}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            <span className="hidden sm:inline">Book Extra Session</span>
+            <span className="sm:hidden">Book Extra Session</span>
+          </Button>
+        </div>
+      </CardHeader>
+
 
         <CardContent>
           <div className="grid grid-cols-7 gap-[1px] bg-[#23B685]/10 rounded-lg overflow-hidden text-center text-xs sm:text-sm">
