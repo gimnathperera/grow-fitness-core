@@ -48,10 +48,7 @@ export const kidsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (_, __, { id }) => [{ type: 'Kid', id }, 'Kid'],
     }),
-    createKids: builder.mutation<
-      ApiSuccessResponse<unknown>,
-      CreateKidsPayload
-    >({
+    createKids: builder.mutation<ApiSuccessResponse<unknown>, CreateKidsPayload>({
       query: payload => ({
         url: '/kids',
         method: 'POST',
@@ -63,4 +60,10 @@ export const kidsApi = baseApi.injectEndpoints({
   overrideExisting: false,
 });
 
-export const { useCreateKidsMutation, useGetKidQuery, useGetKidsQuery, useLazyGetKidQuery, useUpdateKidMutation } = kidsApi;
+export const {
+  useCreateKidsMutation,
+  useGetKidQuery,
+  useGetKidsQuery,
+  useLazyGetKidQuery,
+  useUpdateKidMutation,
+} = kidsApi;
