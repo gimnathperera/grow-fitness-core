@@ -3,8 +3,9 @@ import {
   IsString,
   IsArray,
   IsBoolean,
-  IsDateString,
   IsObject,
+  IsDateString,
+  IsEmail,
   IsNumber,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
@@ -60,6 +61,15 @@ export class CreateClientDto {
   @ApiProperty()
   @IsString()
   userId: string;
+
+  @ApiProperty()
+  @IsString()
+  name: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsEmail()
+  email: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -151,6 +161,22 @@ export class CreateClientDto {
 }
 
 export class UpdateClientDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @IsEmail()
+  email?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  location?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsDateString()

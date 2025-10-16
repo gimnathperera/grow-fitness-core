@@ -9,6 +9,8 @@ import {
   Query,
   UseGuards,
   Request,
+  NotFoundException,
+  ForbiddenException,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -35,13 +37,11 @@ import { SuccessResponseDto } from "../common/dto/response.dto";
 export class ClientsController {
   constructor(private clientsService: ClientsService) {}
 
+  // ---------------- CREATE CLIENT ----------------
   @Post()
   @Roles(UserRole.ADMIN, UserRole.TEAM)
   @ApiOperation({ summary: "Create a new client profile" })
-  @ApiResponse({
-    status: 201,
-    description: "Client created successfully",
-  })
+  @ApiResponse({ status: 201, description: "Client created successfully" })
   async create(
     @Body() createClientDto: CreateClientDto
   ): Promise<SuccessResponseDto<any>> {
@@ -49,20 +49,15 @@ export class ClientsController {
     return {
       ok: true,
       data: client,
-      meta: {
-        traceId: "create-client",
-        timestamp: new Date().toISOString(),
-      },
+      meta: { traceId: "create-client", timestamp: new Date().toISOString() },
     };
   }
 
+  // ---------------- GET ALL CLIENTS ----------------
   @Get()
   @Roles(UserRole.ADMIN, UserRole.TEAM, UserRole.COACH)
   @ApiOperation({ summary: "Get all clients" })
-  @ApiResponse({
-    status: 200,
-    description: "Clients retrieved successfully",
-  })
+  @ApiResponse({ status: 200, description: "Clients retrieved successfully" })
   @ApiQuery({ name: "assignedCoachId", required: false })
   @ApiQuery({ name: "tags", required: false, type: [String] })
   @ApiQuery({ name: "status", required: false })
@@ -113,109 +108,122 @@ export class ClientsController {
     };
   }
 
+  // ---------------- GET CURRENT CLIENT PROFILE ----------------
   @Get("my-profile")
   @Roles(UserRole.CLIENT)
-  @ApiOperation({ summary: "Get current client profile" })
-  @ApiResponse({
-    status: 200,
-    description: "Client profile retrieved successfully",
-  })
+  @ApiOperation({ summary: "Get current client profile (auto-create if missing)" })
+  @ApiResponse({ status: 200, description: "Client profile retrieved successfully" })
   async getMyProfile(@Request() req): Promise<SuccessResponseDto<any>> {
-    const client = await this.clientsService.findByUserId(req.user.sub);
+    const userId = req.user.sub; // JWT user ID as string
+    let client = await this.clientsService.findByUserId(userId);
+
+    // ✅ Auto-create profile if missing
     if (!client) {
-      throw new Error("Client profile not found");
+      client = await this.clientsService.create({
+        userId,
+        // Optional: prefill defaults from req.user if available
+        name: req.user.name || "",
+        email: req.user.email || "",
+      });
     }
 
     return {
       ok: true,
       data: client,
+      meta: { traceId: "get-my-profile", timestamp: new Date().toISOString() },
+    };
+  }
+
+  // ---------------- UPDATE CURRENT CLIENT PROFILE ----------------
+  @Patch("my-profile")
+  @Roles(UserRole.CLIENT)
+  @ApiOperation({ summary: "Update current client's profile" })
+  @ApiResponse({ status: 200, description: "Client profile updated successfully" })
+  async updateMyProfile(
+    @Request() req,
+    @Body() updateClientDto: UpdateClientDto
+  ): Promise<SuccessResponseDto<any>> {
+    const userId = req.user.sub;
+    let client = await this.clientsService.findByUserId(userId);
+
+    // ✅ Auto-create if missing (ensures every logged client has a record)
+    if (!client) {
+      client = await this.clientsService.create({
+        userId,
+        name: req.user.name || "",
+        email: req.user.email || "",
+      });
+    }
+
+    const updatedClient = await this.clientsService.update(
+      client._id.toString(),
+      updateClientDto
+    );
+
+    return {
+      ok: true,
+      data: updatedClient,
       meta: {
-        traceId: "get-my-profile",
+        traceId: `update-my-client-profile-${userId}`,
         timestamp: new Date().toISOString(),
       },
     };
   }
 
+  // ---------------- GET CLIENT BY ID ----------------
   @Get(":id")
   @Roles(UserRole.ADMIN, UserRole.TEAM, UserRole.COACH, UserRole.CLIENT)
   @ApiOperation({ summary: "Get client by ID" })
-  @ApiResponse({
-    status: 200,
-    description: "Client retrieved successfully",
-  })
-  @ApiResponse({
-    status: 404,
-    description: "Client not found",
-  })
-  async findOne(
-    @Param("id") id: string,
-    @Request() req
-  ): Promise<SuccessResponseDto<any>> {
-    // Check if client is accessing their own profile or has permission
+  async findOne(@Param("id") id: string, @Request() req): Promise<SuccessResponseDto<any>> {
     if (req.user.role === UserRole.CLIENT) {
       const client = await this.clientsService.findByUserId(req.user.sub);
       if (!client || client._id.toString() !== id) {
-        throw new Error("Access denied");
+        throw new ForbiddenException("Access denied");
       }
     }
 
     const client = await this.clientsService.findById(id);
     if (!client) {
-      throw new Error("Client not found");
+      throw new NotFoundException("Client not found");
     }
 
     return {
       ok: true,
       data: client,
-      meta: {
-        traceId: "get-client",
-        timestamp: new Date().toISOString(),
-      },
+      meta: { traceId: "get-client", timestamp: new Date().toISOString() },
     };
   }
 
+  // ---------------- UPDATE CLIENT ----------------
   @Patch(":id")
   @Roles(UserRole.ADMIN, UserRole.TEAM, UserRole.CLIENT)
   @ApiOperation({ summary: "Update client" })
-  @ApiResponse({
-    status: 200,
-    description: "Client updated successfully",
-  })
-  @ApiResponse({
-    status: 404,
-    description: "Client not found",
-  })
   async update(
     @Param("id") id: string,
     @Body() updateClientDto: UpdateClientDto,
     @Request() req
   ): Promise<SuccessResponseDto<any>> {
-    // Check if client is updating their own profile or has permission
     if (req.user.role === UserRole.CLIENT) {
       const client = await this.clientsService.findByUserId(req.user.sub);
       if (!client || client._id.toString() !== id) {
-        throw new Error("Access denied");
+        throw new ForbiddenException("Access denied");
       }
     }
 
     const client = await this.clientsService.update(id, updateClientDto);
+    if (!client) throw new NotFoundException("Client not found");
+
     return {
       ok: true,
       data: client,
-      meta: {
-        traceId: "update-client",
-        timestamp: new Date().toISOString(),
-      },
+      meta: { traceId: "update-client", timestamp: new Date().toISOString() },
     };
   }
 
+  // ---------------- ASSIGN COACH ----------------
   @Post("assign-coach")
   @Roles(UserRole.ADMIN, UserRole.TEAM)
   @ApiOperation({ summary: "Assign coach to client" })
-  @ApiResponse({
-    status: 200,
-    description: "Coach assigned successfully",
-  })
   async assignCoach(
     @Body() assignCoachDto: AssignCoachDto
   ): Promise<SuccessResponseDto<any>> {
@@ -223,32 +231,27 @@ export class ClientsController {
       assignCoachDto.clientId,
       assignCoachDto.coachId
     );
+
+    if (!client) throw new NotFoundException("Client not found for coach assignment");
+
     return {
       ok: true,
       data: client,
-      meta: {
-        traceId: "assign-coach",
-        timestamp: new Date().toISOString(),
-      },
+      meta: { traceId: "assign-coach", timestamp: new Date().toISOString() },
     };
   }
 
+  // ---------------- DELETE CLIENT ----------------
   @Delete(":id")
   @Roles(UserRole.ADMIN, UserRole.TEAM)
   @ApiOperation({ summary: "Delete client" })
-  @ApiResponse({
-    status: 200,
-    description: "Client deleted successfully",
-  })
   async remove(@Param("id") id: string): Promise<SuccessResponseDto<null>> {
     await this.clientsService.delete(id);
+
     return {
       ok: true,
       data: null,
-      meta: {
-        traceId: "delete-client",
-        timestamp: new Date().toISOString(),
-      },
+      meta: { traceId: "delete-client", timestamp: new Date().toISOString() },
     };
   }
 }

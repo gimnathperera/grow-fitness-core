@@ -16,8 +16,6 @@ export const coachTabs = [
   { id: 'overview', label: 'Overview', icon: Home },
   { id: 'students', label: 'Students', icon: User },
   { id: 'schedule', label: 'Schedule', icon: Calendar },
-  { id: 'progress', label: 'Progress', icon: TrendingUp },
-  { id: 'messages', label: 'Messages', icon: MessageCircle },
 ];
 
 export const parentTabs = [
@@ -25,10 +23,8 @@ export const parentTabs = [
   { id: 'achievements', label: 'Achievements', icon: Trophy },
   { id: 'schedule', label: 'Schedule', icon: Calendar },
   { id: 'progress', label: 'Progress', icon: TrendingUp },
-  { id: 'messages', label: 'Messages', icon: MessageCircle },
 ];
 
-// Dashboard Quick Actions
 export const coachQuickActions = [
   { icon: Plus, label: 'Add Session', primary: true },
   { icon: Users, label: 'View Students' },

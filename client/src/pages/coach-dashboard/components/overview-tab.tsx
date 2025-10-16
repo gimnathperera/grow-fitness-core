@@ -2,15 +2,12 @@ import { useState } from 'react';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Calendar } from 'lucide-react';
+import { Calendar, User as UserIcon } from 'lucide-react';
 import type { Session, User } from '@/types/dashboard';
-import { coachQuickActions, parentQuickActions } from '@/constants/dashboard';
 import { recentActivities } from '@/data/coach/recent-activities';
 import SessionDetailsModal from '@/components/session-details-modal';
 
@@ -23,9 +20,6 @@ type SessionStatus = 'next' | 'upcoming' | 'later';
 
 export function OverviewTab({ user, sessions }: OverviewTabProps) {
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
-
-  const quickActions =
-    user.role === 'coach' ? coachQuickActions : parentQuickActions;
 
   const getStatusBadge = (status: SessionStatus) => {
     const badges = {
@@ -84,6 +78,44 @@ export function OverviewTab({ user, sessions }: OverviewTabProps) {
         <Card className="border-[#23B685]/20">
           <CardHeader>
             <CardTitle className="text-[#243E36] flex items-center">
+              <UserIcon className="mr-2 h-5 w-5" />
+              Child Profile
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-[#23B685]/10 rounded-full flex items-center justify-center">
+                  <UserIcon className="h-8 w-8 text-[#23B685]" />
+                </div>
+                <div>
+                  {/* <h3 className="font-semibold text-[#243E36]">
+                    {isKidLoading ? 'Loading...' : displayName}
+                  </h3> */}
+                  {/* <p className="text-gray-600">{displayAge} years old</p> */}
+                  <Badge
+                    variant="secondary"
+                    className="bg-[#23B685]/10 text-[#23B685]"
+                  >
+                    Active Member
+                  </Badge>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Member Since:</span>
+                  <span className="text-sm font-medium text-[#243E36]">
+                    January 2024
+                  </span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-[#23B685]/20">
+          <CardHeader>
+            <CardTitle className="text-[#243E36] flex items-center">
               <Calendar className="mr-2 h-5 w-5" />
               {user.role === 'coach' ? "Today's Schedule" : 'Upcoming Sessions'}
             </CardTitle>
@@ -94,49 +126,7 @@ export function OverviewTab({ user, sessions }: OverviewTabProps) {
             ))}
           </CardContent>
         </Card>
-
-        <Card className="border-[#23B685]/20">
-          <CardHeader>
-            <CardTitle className="text-[#243E36]">
-              {user.role === 'coach' ? 'Recent Activity' : 'Recent Progress'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {recentActivities(user.role).map(act => (
-              <ActivityItem key={`${act.text}-${act.time}`} {...act} />
-            ))}
-          </CardContent>
-        </Card>
       </div>
-
-      <Card className="border-[#23B685]/20">
-        <CardHeader>
-          <CardTitle className="text-[#243E36]">Quick Actions</CardTitle>
-          <CardDescription>
-            {user.role === 'coach'
-              ? 'Common tasks to help you manage your coaching activities'
-              : "Quick actions to manage your child's fitness journey"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {quickActions.map((action, index) => (
-              <Button
-                key={index}
-                className={`flex flex-col h-auto py-4 ${
-                  action.primary
-                    ? '!bg-primary hover:!bg-primary/90 text-white'
-                    : '!border-primary text-primary hover:bg-white/90 hover:text-primary !bg-white'
-                }`}
-                variant={action.primary ? 'default' : 'outline'}
-              >
-                <action.icon className="h-6 w-6 mb-2" />
-                <h6>{action.label}</h6>
-              </Button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       <SessionDetailsModal
         session={selectedSession}

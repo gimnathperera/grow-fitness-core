@@ -177,15 +177,24 @@ export default function ScheduleTab() {
                   } ${isToday ? 'border border-[#23B685]' : ''}`}
                 >
                   <div className="text-gray-600 text-xs mb-1">{day ? day.getDate() : ''}</div>
-                  {dayEvents.map((event) => (
+                {dayEvents.map((event) => {
+                  const isGroup = event.session?.sessionType?.toLowerCase() === 'group';
+
+                  return (
                     <div
                       key={event._id}
                       onClick={() => setSelectedSession(event.session)}
-                      className="w-full bg-[#23B685]/15 hover:bg-[#23B685]/25 text-[#23B685] text-xs p-1 rounded-md truncate"
+                      className={`w-full text-xs p-1 rounded-md truncate transition-colors duration-200
+                        ${
+                          isGroup
+                            ? 'bg-[#23B685]/15 hover:bg-[#23B685]/25 text-[#23B685]' // lighter shade for group
+                            : 'bg-[#1e8d67]/25 hover:bg-[#1e8d67]/40 text-[#1e8d67]' // darker green for individual
+                        }`}
                     >
                       {event.title}
                     </div>
-                  ))}
+                  );
+                })}
                 </div>
               );
             })}
