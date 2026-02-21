@@ -1,63 +1,192 @@
-import type { User } from '@/types/dashboard';
+"use client";
 
-interface DashboardHeaderProps {
-  user: User;
-}
+import { useState, useEffect } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import { useDispatch, useSelector } from "react-redux";
+import type { RootState } from "@/store";
+import { setSelectedKidId } from "@/auth/authSlice";
+import { useLazyGetKidQuery, useGetKidsQuery } from "@/services/kidsApi";
 
-export function DashboardHeader({ user }: DashboardHeaderProps) {
+export function DashboardHeader() {
+  const user = useSelector((state: RootState) => state.auth.user);
+  const dispatch = useDispatch();
+
   const roleConfig = {
     parent: {
-      badge: { bg: 'bg-[#FFFD77]', text: 'text-[#243E36]', label: 'Parent' },
-      greeting: `Welcome Back!, ${user.name}! 👋`,
+      badge: {
+        bg: "bg-[#FFFD77]",
+        text: "text-[#243E36]",
+        label: "Parent Dashboard",
+      },
+      greeting: `Hi ${user?.name ?? "User"} 👋`,
       subtitle: "Track your child's fitness journey",
     },
     coach: {
-      badge: { bg: 'bg-[#FFFD77]', text: 'text-[#243E36]', label: 'Coach' },
-      greeting: `Welcome Back!, Coach ${user.name}! 👋`,
-      subtitle: 'Ready to inspire young athletes today?',
+      badge: {
+        bg: "bg-[#FFFD77]",
+        text: "text-[#243E36]",
+        label: "Coach Dashboard",
+      },
+      greeting: `Hi Coach ${user?.name ?? ""} 👋`,
+      subtitle: "Ready to inspire young athletes today?",
+    },
+    admin: {
+      badge: {
+        bg: "bg-blue-100",
+        text: "text-blue-800",
+        label: "Admin Dashboard",
+      },
+      greeting: `Welcome back, ${user?.name ?? "Admin"} 👋`,
+      subtitle: "Manage the platform and monitor activity",
+    },
+    team: {
+      badge: {
+        bg: "bg-green-100",
+        text: "text-green-800",
+        label: "Team Dashboard",
+      },
+      greeting: `Hi ${user?.name ?? "Team Member"} 👋`,
+      subtitle: "Collaborate and manage your tasks",
+    },
+    client: {
+      badge: {
+        bg: "bg-purple-100",
+        text: "text-purple-800",
+        label: "Client Dashboard",
+      },
+      greeting: `Hi ${user?.name ?? "Client"} 👋`,
+      subtitle: "Access your services and track updates",
     },
   };
 
-  const config = roleConfig[user.role];
+  const config = user ? roleConfig[user.role] : null;
+
+  const [selectedKid, setSelectedKid] = useState<string>("");
+  const [triggerGetKid, { data: kidResp, isFetching: isKidLoading }] =
+    useLazyGetKidQuery();
+
+  const { data: kidsListResp } = useGetKidsQuery(
+    user?.role === "client" ? {} : undefined,
+    { skip: user?.role !== "client" }
+  );
+
+  const userKids =
+    (user as any)?.kids as Array<{ id: string; name: string }> | undefined;
+  const apiKids =
+    (kidsListResp?.data as any[])?.map((k: any) => ({
+      id: String(k._id || k.id),
+      name: k.name,
+    })) || [];
+  const kidsForUi: Array<{ id: string; name: string }> = userKids?.length
+    ? userKids.map((k: { id: string; name: string }) => ({
+        id: String(k.id),
+        name: k.name,
+      }))
+    : apiKids;
+
+  useEffect(() => {
+    if (user?.role === "client") {
+      const userKids = (user as any)?.kids as
+        | Array<{ id: string; name: string }>
+        | undefined;
+      if (userKids?.length) {
+        const firstId = String(userKids[0].id);
+        setSelectedKid(firstId);
+        dispatch(setSelectedKidId(firstId));
+        return;
+      }
+      const apiKids = (kidsListResp?.data as any[]) ?? [];
+      if (apiKids.length) {
+        const firstId = String(apiKids[0]._id || apiKids[0].id);
+        setSelectedKid(firstId);
+        dispatch(setSelectedKidId(firstId));
+      }
+    }
+  }, [user, kidsListResp, dispatch]);
+
+  useEffect(() => {
+    if (user?.role === "client" && selectedKid) {
+      dispatch(setSelectedKidId(selectedKid));
+      triggerGetKid(selectedKid);
+    }
+  }, [user?.role, selectedKid, triggerGetKid, dispatch]);
+
+  if (!user) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        <p className="text-gray-500">Loading user...</p>
+      </div>
+    );
+  }
 
   return (
-    <>
-      {/* Navigation */}
-      {/* <nav className="bg-white shadow-sm border-b border-[#23B685]/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-[#23B685] rounded-full flex items-center justify-center">
-                <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[8px] border-b-white"></div>
-              </div>
-              <span className="text-2xl font-bold text-[#243E36]">GROW</span>
-              <Badge className={`${config.badge.bg} ${config.badge.text} ml-2`}>{config.badge.label}</Badge>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button variant="default" size="sm" className="
-                    w-full md:w-auto px-3 py-1 text-xs md:px-8 md:py-2 md:text-lg rounded-full font-[Insaniburger_with_Cheese] font-extrabold shadow-lg inline-flex items-center justify-center transition-transform duration-300 hover:scale-105 !bg-primary hover:bg-[#1e9c70] !text-white">
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </Button>
-              <Button variant="ghost" size="sm">
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </div>
-        </div>
-      </nav> */}
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-black mb-2">
-            {config.greeting}
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      {/* Main header container */}
+      <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-center md:justify-between">
+        {/* Left side */}
+        <div className="text-center md:text-left">
+          <h1 className="text-base sm:text-lg font-semibold text-gray-800">
+            {config?.greeting}
           </h1>
-          <p className="text-sm sm:text-base text-gray-600">
-            {config.subtitle}
-          </p>
+          <p className="text-xs sm:text-sm text-gray-500">{config?.subtitle}</p>
+
+          {user.role === "client" && selectedKid && (
+            <p className="text-[11px] sm:text-xs text-gray-400 mt-1">
+              {isKidLoading
+                ? "Loading kid details..."
+                : kidResp?.data?.name
+                ? `Selected: ${kidResp.data.name}`
+                : (() => {
+                    const fallback = kidsForUi.find((k) => k.id === selectedKid);
+                    return fallback ? `Selected: ${fallback.name}` : null;
+                  })()}
+            </p>
+          )}
         </div>
+
+        {/* Right side: Kid selector */}
+        {user.role === "client" && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 text-center sm:text-left">
+            <h4 className="text-sm font-bold text-gray-700">Kid's Name:</h4>
+            {kidsForUi && kidsForUi.length > 0 ? (
+              kidsForUi.length === 1 ? (
+                <span className="px-3 py-1 rounded-md bg-gray-100 text-sm font-medium text-gray-700 shadow-sm">
+                  {kidsForUi[0].name}
+                </span>
+              ) : (
+                <Select
+                  value={selectedKid}
+                  onValueChange={(val) => {
+                    setSelectedKid(val);
+                    dispatch(setSelectedKidId(val));
+                  }}
+                >
+                  <SelectTrigger className="w-full sm:w-[160px] text-sm">
+                    <SelectValue placeholder="Select Kid" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {kidsForUi.map((kid) => (
+                      <SelectItem key={kid.id} value={String(kid.id)}>
+                        {kid.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )
+            ) : (
+              <span className="px-3 py-1 rounded-md bg-gray-50 text-sm font-medium text-gray-400 italic">
+                Kid Name
+              </span>
+            )}
+          </div>
+        )}
       </div>
-    </>
+    </div>
   );
 }

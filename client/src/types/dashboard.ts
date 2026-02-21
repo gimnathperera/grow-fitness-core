@@ -1,9 +1,12 @@
 export interface User {
   name: string;
   role: 'parent' | 'coach';
+ kids?: Student[]
 }
 
 export interface Student {
+  group: string;
+  sessionType: string;
   id: number;
   name: string;
   age: number;
@@ -13,6 +16,26 @@ export interface Student {
   location?: string;
   contactNumber?: string;
   sessions?: Session[];
+  currentMilestone?: Milestone;
+  totalSessions?: number;
+  bmi?: number;
+  height?: number;
+  weight?: number;
+}
+
+export interface Milestone {
+  id: number;
+  name: string;
+  tasks: Task[];
+}
+
+export interface Task {
+  id: string;
+  type: 'fitness' | 'wellness' | 'nutrition';
+  title: string;
+  description: string;
+  status: 'completed' | 'pending';
+  completedAt?: string;
 }
 
 export interface Session {

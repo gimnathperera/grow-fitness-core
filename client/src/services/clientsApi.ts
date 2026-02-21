@@ -5,8 +5,15 @@ export interface ClientProfile extends Record<string, unknown> {
   _id?: string;
   id?: string;
   userId?: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  location?: string;
+  profilePic?: string;
   assignedCoachId?: string;
   status?: string;
+  kids?: any[];
+  invoices?: any[];
 }
 
 export interface ClientsListResponse {
@@ -30,10 +37,7 @@ export interface ClientsQueryParams {
 
 export const clientsApi = baseApi.injectEndpoints({
   endpoints: builder => ({
-    getClients: builder.query<
-      ApiSuccessResponse<ClientsListResponse>,
-      ClientsQueryParams | void
-    >({
+    getClients: builder.query<ApiSuccessResponse<ClientsListResponse>, ClientsQueryParams | void>({
       query: params => ({
         url: '/clients',
         method: 'GET',
@@ -55,10 +59,7 @@ export const clientsApi = baseApi.injectEndpoints({
       }),
       providesTags: ['Client'],
     }),
-    updateClient: builder.mutation<
-      ApiSuccessResponse<ClientProfile>,
-      { id: string; payload: Partial<ClientProfile> }
-    >({
+    updateClient: builder.mutation<ApiSuccessResponse<ClientProfile>, { id: string; payload: Partial<ClientProfile> }>({
       query: ({ id, payload }) => ({
         url: `/clients/${id}`,
         method: 'PATCH',

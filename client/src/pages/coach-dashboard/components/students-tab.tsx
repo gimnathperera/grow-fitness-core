@@ -9,9 +9,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Users, Plus } from 'lucide-react';
 import type { Student } from '@/types/dashboard';
-import StudentDetailsModal from '@/components/student-details-modal';
+import CoachKidModal from './kids-list/kid-details';
 
 interface StudentsTabProps {
   students: Student[];
@@ -46,6 +47,11 @@ const StudentRow = ({
           <p className="text-xs text-gray-500">
             Last session: {student.lastSession}
           </p>
+          {student.group && (
+            <Badge variant="outline" className="mt-1 text-xs">
+              {student.group}
+            </Badge>
+          )}
         </div>
       </div>
 
@@ -69,6 +75,18 @@ const StudentRow = ({
 
 export default function StudentsTab({ students }: StudentsTabProps) {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [sessionType, setSessionType] = useState<'individual' | 'group'>('individual');
+  const [selectedGroup, setSelectedGroup] = useState<'Group A' | 'Group B' | 'Group C' | 'all'>('all');
+
+  const filteredStudents = students.filter(student => {
+    if (student.sessionType !== sessionType) return false;
+    
+    if (sessionType === 'group' && selectedGroup !== 'all') {
+      return student.group === selectedGroup;
+    }
+    
+    return true;
+  });
 
   return (
     <>
@@ -93,18 +111,80 @@ export default function StudentsTab({ students }: StudentsTabProps) {
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {students.map(student => (
-            <StudentRow
-              key={student.id}
-              student={student}
-              onClick={() => setSelectedStudent(student)}
-            />
-          ))}
+          <Tabs value={sessionType} onValueChange={(v) => setSessionType(v as 'individual' | 'group')}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger
+                value="individual"
+                className="data-[state=active]:!bg-primary data-[state=active]:text-white"
+              >
+                Individual Sessions
+              </TabsTrigger>
+              <TabsTrigger
+                value="group"
+                className="data-[state=active]:!bg-primary data-[state=active]:text-white"
+              >
+                Group Sessions
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {sessionType === 'group' && (
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant={selectedGroup === 'all' ? 'default' : 'outline'}
+                onClick={() => setSelectedGroup('all')}
+                className={selectedGroup === 'all' ? 'bg-[#23B685] hover:bg-[#23B685]/90' : ''}
+              >
+                All Groups
+              </Button>
+              <Button
+                size="sm"
+                variant={selectedGroup === 'Group A' ? 'default' : 'outline'}
+                onClick={() => setSelectedGroup('Group A')}
+                className={selectedGroup === 'Group A' ? 'bg-[#23B685] hover:bg-[#23B685]/90' : ''}
+              >
+                Group A
+              </Button>
+              <Button
+                size="sm"
+                variant={selectedGroup === 'Group B' ? 'default' : 'outline'}
+                onClick={() => setSelectedGroup('Group B')}
+                className={selectedGroup === 'Group B' ? 'bg-[#23B685] hover:bg-[#23B685]/90' : ''}
+              >
+                Group B
+              </Button>
+              <Button
+                size="sm"
+                variant={selectedGroup === 'Group C' ? 'default' : 'outline'}
+                onClick={() => setSelectedGroup('Group C')}
+                className={selectedGroup === 'Group C' ? 'bg-[#23B685] hover:bg-[#23B685]/90' : ''}
+              >
+                Group C
+              </Button>
+            </div>
+          )}
+
+          <div className="space-y-3 mt-4">
+            {filteredStudents.length > 0 ? (
+              filteredStudents.map(student => (
+                <StudentRow
+                  key={student.id}
+                  student={student}
+                  onClick={() => setSelectedStudent(student)}
+                />
+              ))
+            ) : (
+              <p className="text-center text-gray-500 py-8">
+                No students found for the selected filter
+              </p>
+            )}
+          </div>
         </CardContent>
       </Card>
-
-      <StudentDetailsModal
-        student={selectedStudent}
+      
+      <CoachKidModal
+        kid={selectedStudent}
         open={!!selectedStudent}
         onClose={() => setSelectedStudent(null)}
       />

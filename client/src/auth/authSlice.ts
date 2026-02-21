@@ -18,6 +18,7 @@ export interface AuthState {
   expiresAt: string | null;
   user: UserProfile | null;
   status: 'idle' | 'hydrated';
+  selectedKidId: string | null;
 }
 
 const BASE_STATE: AuthState = {
@@ -26,6 +27,7 @@ const BASE_STATE: AuthState = {
   expiresAt: null,
   user: null,
   status: 'idle',
+  selectedKidId: null,
 };
 
 const persisted = loadAuthState();
@@ -34,6 +36,7 @@ const initialState: AuthState = {
   ...BASE_STATE,
   ...(persisted ?? {}),
   status: persisted ? 'hydrated' : 'idle',
+  selectedKidId: persisted?.selectedKidId ?? null,
 };
 
 const persist = (state: AuthState) => {
@@ -42,6 +45,7 @@ const persist = (state: AuthState) => {
     refreshToken: state.refreshToken,
     expiresAt: state.expiresAt,
     user: state.user,
+    selectedKidId: state.selectedKidId,
   };
 
   saveAuthState(payload);
@@ -76,6 +80,10 @@ const authSlice = createSlice({
       state.user = action.payload;
       persist(state);
     },
+    setSelectedKidId(state, action: PayloadAction<string | null>) {
+      state.selectedKidId = action.payload ?? null;
+      persist(state);
+    },
     clearSession() {
       clearAuthState();
       return { ...BASE_STATE, status: 'hydrated' };
@@ -83,7 +91,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { hydrateFromStorage, setTokens, setUser, clearSession } =
+export const { hydrateFromStorage, setTokens, setUser, setSelectedKidId, clearSession } =
   authSlice.actions;
 
 export const selectAuth = (state: RootState) => state.auth;
@@ -92,5 +100,6 @@ export const selectRefreshToken = (state: RootState) => state.auth.refreshToken;
 export const selectCurrentUser = (state: RootState) => state.auth.user;
 export const selectIsAuthenticated = (state: RootState) =>
   Boolean(state.auth.accessToken);
+export const selectSelectedKidId = (state: RootState) => state.auth.selectedKidId;
 
 export default authSlice.reducer;

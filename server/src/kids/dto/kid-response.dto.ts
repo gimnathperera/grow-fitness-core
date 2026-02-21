@@ -32,6 +32,17 @@ export class KidParentResponseDto {
   kidsDataCompleted?: boolean;
 }
 
+export class KidCoachResponseDto {
+  @ApiProperty({ description: 'Coach ID', example: '507f1f77bcf86cd799439099' })
+  id: string;
+
+  @ApiPropertyOptional({ description: 'Coach name (from linked user)', example: 'Coach Sam' })
+  name?: string;
+
+  @ApiPropertyOptional({ description: 'Coach user ID', example: '507f1f77bcf86cd799439012' })
+  userId?: string;
+}
+
 export class KidResponseDto {
   @ApiProperty({
     description: "Unique identifier of the kid",
@@ -101,6 +112,12 @@ export class KidResponseDto {
     type: KidParentResponseDto,
   })
   parent?: KidParentResponseDto;
+
+  @ApiPropertyOptional({
+    description: 'Assigned coach summary',
+    type: KidCoachResponseDto,
+  })
+  coach?: KidCoachResponseDto;
 }
 
 export class KidsListResponseDto {

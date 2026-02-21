@@ -59,6 +59,27 @@ export class SessionsController {
     };
   }
 
+  @Get("upcoming-by-kid")
+  @Roles(UserRole.ADMIN, UserRole.TEAM, UserRole.COACH, UserRole.CLIENT)
+  @ApiOperation({ summary: "Get upcoming sessions by kidId" })
+  @ApiResponse({ status: 200, description: "Upcoming sessions by kid retrieved successfully" })
+  @ApiQuery({ name: "kidId", required: true })
+  @ApiQuery({ name: "limit", required: false, type: Number })
+  async getUpcomingByKid(
+    @Query("kidId") kidId: string,
+    @Query("limit") limit?: number
+  ): Promise<SuccessResponseDto<any[]>> {
+    const sessions = await this.sessionsService.getUpcomingByKid(kidId, limit || 10);
+    return {
+      ok: true,
+      data: sessions,
+      meta: {
+        traceId: "get-upcoming-by-kid",
+        timestamp: new Date().toISOString(),
+      },
+    };
+  }
+
   @Get()
   @Roles(UserRole.ADMIN, UserRole.TEAM, UserRole.COACH, UserRole.CLIENT)
   @ApiOperation({ summary: "Get all sessions" })
@@ -68,6 +89,7 @@ export class SessionsController {
   })
   @ApiQuery({ name: "clientId", required: false })
   @ApiQuery({ name: "coachId", required: false })
+  @ApiQuery({ name: "kidId", required: false })
   @ApiQuery({ name: "status", required: false, enum: SessionStatus })
   @ApiQuery({ name: "dateFrom", required: false })
   @ApiQuery({ name: "dateTo", required: false })
@@ -78,6 +100,7 @@ export class SessionsController {
     query: PageQueryDto & {
       clientId?: string;
       coachId?: string;
+      kidId?: string;
       status?: SessionStatus;
       dateFrom?: string;
       dateTo?: string;
@@ -88,6 +111,7 @@ export class SessionsController {
     const { sessions, total } = await this.sessionsService.findAll({
       clientId: query.clientId,
       coachId: query.coachId,
+      kidId: query.kidId,
       status: query.status,
       dateFrom: query.dateFrom,
       dateTo: query.dateTo,
@@ -150,6 +174,27 @@ export class SessionsController {
     };
   }
 
+  @Get("check-availability")
+  @Roles(UserRole.ADMIN, UserRole.TEAM, UserRole.COACH, UserRole.CLIENT)
+  @ApiOperation({ summary: "Get coach availability (generated slots)" })
+  @ApiResponse({ status: 200, description: "Coach availability retrieved successfully" })
+  @ApiQuery({ name: "coachId", required: true })
+  @ApiQuery({ name: "location", required: false })
+  async getAvailabilityByCoach(
+    @Query("coachId") coachId: string,
+    @Query("location") location?: string
+  ): Promise<SuccessResponseDto<any>> {
+    const data = await this.sessionsService.getAvailabilityByCoach(coachId, location);
+    return {
+      ok: true,
+      data,
+      meta: {
+        traceId: "get-availability-by-coach",
+        timestamp: new Date().toISOString(),
+      },
+    };
+  }
+
   @Get("stats")
   @Roles(UserRole.ADMIN, UserRole.TEAM, UserRole.COACH)
   @ApiOperation({ summary: "Get session statistics" })
@@ -204,7 +249,8 @@ export class SessionsController {
     const available = await this.sessionsService.checkAvailability(
       checkAvailabilityDto.coachId,
       checkAvailabilityDto.startsAt,
-      checkAvailabilityDto.endsAt
+      checkAvailabilityDto.endsAt,
+      checkAvailabilityDto.location
     );
 
     return {

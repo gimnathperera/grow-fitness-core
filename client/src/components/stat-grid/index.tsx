@@ -73,7 +73,7 @@ export function StatsGrid({ stats, user }: StatsGridProps) {
   const statsToShow = user.role === 'coach' ? coachStats : parentStats;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="max-w-7xl mx-auto">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         {statsToShow.map((stat, index) => (
           <Card key={index} className="border-[#23B685]/20">

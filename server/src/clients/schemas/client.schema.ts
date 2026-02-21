@@ -91,6 +91,36 @@ export class Client {
 
   @Prop()
   preferredLanguage?: string;
+
+  @Prop([{
+    name: String,
+    age: Number,
+    sessionType: String,
+    gender: String,
+    location: String,
+    paymentStatus: String
+  }])
+  kids?: Array<{
+    name: string;
+    age?: number;
+    sessionType?: string;
+    gender?: string;
+    location?: string;
+    paymentStatus?: string;
+  }>;
+
+  @Prop([{
+    date: Date,
+    amount: Number,
+    status: String,
+    kidName: String
+  }])
+  invoices?: Array<{
+    date: Date;
+    amount: number;
+    status: string;
+    kidName: string;
+  }>;
 }
 
 export const ClientSchema = SchemaFactory.createForClass(Client);

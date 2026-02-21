@@ -19,6 +19,11 @@ export class CreateSessionDto {
   @IsMongoId()
   coachId: string;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsMongoId()
+  kidId?: string;
+
   @ApiProperty()
   @IsDateString()
   startsAt: string;
@@ -134,4 +139,9 @@ export class CheckAvailabilityDto {
   @ApiProperty()
   @IsDateString()
   endsAt: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  location?: string;
 }

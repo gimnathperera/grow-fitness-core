@@ -11,6 +11,9 @@ export class Kid {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   parentId: Types.ObjectId;
 
+  @Prop({ type: Types.ObjectId, ref: 'Coach' })
+  coachId?: Types.ObjectId;
+
   @Prop({ required: true })
   name: string;
 
@@ -33,10 +36,18 @@ export class Kid {
 export const KidSchema = SchemaFactory.createForClass(Kid);
 
 KidSchema.index({ parentId: 1, name: 1 });
+KidSchema.index({ coachId: 1 });
 
 KidSchema.virtual('parent', {
   ref: 'User',
   localField: 'parentId',
+  foreignField: '_id',
+  justOne: true,
+});
+
+KidSchema.virtual('coach', {
+  ref: 'Coach',
+  localField: 'coachId',
   foreignField: '_id',
   justOne: true,
 });
@@ -51,8 +62,14 @@ KidSchema.set('toJSON', {
     if (ret.parentId) {
       ret.parentId = ret.parentId.toString();
     }
+    if (ret.coachId) {
+      ret.coachId = ret.coachId.toString();
+    }
     if (ret.parent && ret.parent._id) {
       ret.parent._id = ret.parent._id.toString();
+    }
+    if (ret.coach && ret.coach._id) {
+      ret.coach._id = ret.coach._id.toString();
     }
     return ret;
   },

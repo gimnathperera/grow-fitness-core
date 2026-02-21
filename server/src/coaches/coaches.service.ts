@@ -76,9 +76,23 @@ export class CoachesService {
   }
 
   async findByUserId(userId: string): Promise<CoachDocument | null> {
-    return this.coachModel
-      .findOne({ userId })
-      .populate("userId", "name email phone");
+    try {
+      console.log(`[CoachesService] Finding coach for user ID: ${userId}`);
+      const coach = await this.coachModel
+        .findOne({ userId })
+        .populate("userId", "name email phone");
+      
+      console.log(`[CoachesService] Find result for user ID ${userId}:`, 
+        coach ? `Found coach ID: ${coach._id}` : 'Not found');
+      
+      return coach;
+    } catch (error) {
+      console.error(`[CoachesService] Error finding coach for user ID ${userId}:`, {
+        error: error.message,
+        stack: error.stack
+      });
+      throw error;
+    }
   }
 
   async update(

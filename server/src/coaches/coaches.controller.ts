@@ -52,6 +52,47 @@ export class CoachesController {
     };
   }
 
+  @Post("my-profile")
+  @Roles(UserRole.COACH)
+  @ApiOperation({ summary: "Create coach profile" })
+  @ApiResponse({
+    status: 201,
+    description: "Coach profile created successfully",
+  })
+  @ApiResponse({
+    status: 400,
+    description: "Coach profile already exists",
+  })
+  async createMyProfile(
+    @Request() req,
+    @Body() createCoachDto: CreateCoachDto
+  ): Promise<SuccessResponseDto<any>> {
+    const userId = req.user?.sub;
+    if (!userId) {
+      throw new Error('User ID not found in request');
+    }
+
+    const existingCoach = await this.coachesService.findByUserId(userId);
+    if (existingCoach) {
+      throw new Error('Coach profile already exists');
+    }
+
+    const coach = await this.coachesService.create({
+      ...createCoachDto,
+      userId,
+      status: 'active', // default status
+    });
+
+    return {
+      ok: true,
+      data: coach,
+      meta: {
+        traceId: `create-my-coach-profile-${userId}`,
+        timestamp: new Date().toISOString(),
+      },
+    };
+  }
+
   @Get()
   @Roles(UserRole.ADMIN, UserRole.TEAM, UserRole.CLIENT)
   @ApiOperation({ summary: "Get all coaches" })
@@ -145,17 +186,95 @@ export class CoachesController {
     status: 200,
     description: "Coach profile retrieved successfully",
   })
+  @ApiResponse({
+    status: 404,
+    description: "Coach profile not found",
+  })
+  @ApiResponse({
+    status: 500,
+    description: "Internal server error",
+  })
   async getMyProfile(@Request() req): Promise<SuccessResponseDto<any>> {
+    const userId = req.user?.sub;
+    if (!userId) {
+      console.error('[Coaches] No user ID found in request');
+      throw new Error('User ID not found in request');
+    }
+
+    console.log('[Coaches] Getting profile for user ID:', userId);
+
+    try {
+      console.log('[Coaches] User object:', JSON.stringify(req.user, null, 2));
+      
+      const coach = await this.coachesService.findByUserId(userId);
+      
+      if (!coach) {
+        const errorMessage = `Coach profile not found for user ID: ${userId}`;
+        console.log(`[Coaches] ${errorMessage}`);
+        return {
+          ok: true,
+          data: null,
+          meta: {
+            traceId: `get-my-profile-${userId}`,
+            timestamp: new Date().toISOString(),
+          },
+        };
+      }
+
+      const coachInfo = {
+        id: coach._id,
+        userId: coach.userId,
+        hasUserInfo: !!coach.userId,
+        specialties: coach.specialties,
+        status: coach.status
+      };
+      console.log('[Coaches] Found coach profile:', coachInfo);
+      
+      return {
+        ok: true,
+        data: coach,
+        meta: {
+          traceId: `get-my-profile-${userId}`,
+          timestamp: new Date().toISOString(),
+        },
+      };
+    } catch (error) {
+      console.error('[Coaches] Error in getMyProfile:', {
+        message: error.message,
+        stack: error.stack,
+        userId,
+        timestamp: new Date().toISOString()
+      });
+      throw new Error(`Failed to fetch coach profile: ${error.message}`);
+    }
+  }
+
+  @Patch("my-profile")
+  @Roles(UserRole.COACH)
+  @ApiOperation({ summary: "Update current coach's profile" })
+  @ApiResponse({
+    status: 200,
+    description: "Coach profile updated successfully",
+  })
+  async updateMyProfile(
+    @Request() req,
+    @Body() updateCoachDto: UpdateCoachDto
+  ): Promise<SuccessResponseDto<any>> {
     const coach = await this.coachesService.findByUserId(req.user.sub);
     if (!coach) {
       throw new Error("Coach profile not found");
     }
 
+    const updatedCoach = await this.coachesService.update(
+      coach._id.toString(),
+      updateCoachDto
+    );
+
     return {
       ok: true,
-      data: coach,
+      data: updatedCoach,
       meta: {
-        traceId: "get-my-profile",
+        traceId: `update-my-coach-profile-${req.user.sub}`,
         timestamp: new Date().toISOString(),
       },
     };
@@ -176,7 +295,6 @@ export class CoachesController {
     @Param("id") id: string,
     @Request() req
   ): Promise<SuccessResponseDto<any>> {
-    // Check if coach is accessing their own profile or has permission
     if (req.user.role === UserRole.COACH) {
       const coach = await this.coachesService.findByUserId(req.user.sub);
       if (!coach || coach._id.toString() !== id) {
@@ -210,7 +328,6 @@ export class CoachesController {
     @Param("id") id: string,
     @Request() req
   ): Promise<SuccessResponseDto<any>> {
-    // Check if coach is accessing their own stats or has permission
     if (req.user.role === UserRole.COACH) {
       const coach = await this.coachesService.findByUserId(req.user.sub);
       if (!coach || coach._id.toString() !== id) {
@@ -245,7 +362,6 @@ export class CoachesController {
     @Body() updateCoachDto: UpdateCoachDto,
     @Request() req
   ): Promise<SuccessResponseDto<any>> {
-    // Check if coach is updating their own profile or has permission
     if (req.user.role === UserRole.COACH) {
       const coach = await this.coachesService.findByUserId(req.user.sub);
       if (!coach || coach._id.toString() !== id) {

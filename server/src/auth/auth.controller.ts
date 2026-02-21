@@ -143,7 +143,17 @@ export class AuthController {
       throw new Error('User not found');
     }
 
-    const profile = {
+    let kids: { id: string; name: string }[] | undefined;
+    if (user.role === UserRole.CLIENT) {
+      const populated = await this.usersService.findParentWithKids(user._id.toString());
+      const populatedKids = (populated?.kids as any[]) || [];
+      kids = populatedKids
+        .filter((k) => !!k)
+        .map((k: any) => ({ id: (k._id ?? k).toString(), name: k.name }))
+        .filter((k) => !!k.name);
+    }
+
+    const profile: any = {
       id: user._id.toString(),
       email: user.email,
       name: user.name,
@@ -154,6 +164,9 @@ export class AuthController {
       updatedAt: user.updatedAt.toISOString(),
       kidsDataCompleted: user.kidsDataCompleted ?? false,
     };
+    if (kids && kids.length) {
+      profile.kids = kids;
+    }
 
     return {
       ok: true,

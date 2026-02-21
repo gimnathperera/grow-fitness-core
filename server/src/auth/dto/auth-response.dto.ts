@@ -12,6 +12,14 @@ export class AuthTokensDto {
   expiresAt: string;
 }
 
+export class KidSummaryDto {
+  @ApiProperty({ example: '507f1f77bcf86cd799439099' })
+  id: string;
+
+  @ApiProperty({ example: 'Ava' })
+  name: string;
+}
+
 export class UserProfileDto {
   @ApiProperty({ example: '507f1f77bcf86cd799439011' })
   id: string;
@@ -39,6 +47,9 @@ export class UserProfileDto {
 
   @ApiProperty({ example: false, description: 'Indicates whether user has completed kids data step' })
   kidsDataCompleted: boolean;
+
+  @ApiProperty({ required: false, type: [KidSummaryDto] })
+  kids?: KidSummaryDto[];
 }
 
 export class LoginResponseDto {
